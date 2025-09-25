@@ -4,7 +4,7 @@ import { Terminal, X, Minimize2, Maximize2 } from 'lucide-react';
 interface ConsolePanelProps {
   isVisible: boolean;
   onToggle: () => void;
-
+}
 
 const ConsolePanel: React.FC<ConsolePanelProps> = ({ isVisible, onToggle }) => {
   const [isMinimized, setIsMinimized] = useState(false);
