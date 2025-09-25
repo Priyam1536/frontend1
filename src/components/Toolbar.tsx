@@ -22,7 +22,6 @@ interface ToolbarProps {
 const Toolbar: React.FC<ToolbarProps> = ({ onToolbarAction }) => {
   const toolbarItems = [
     { icon: Plus, label: 'New Project', action: 'new-project' },
-    { icon: Database, label: 'New Database', action: 'new-database' },
     { type: 'separator' },
     { icon: Upload, label: 'Import', action: 'import' },
     { icon: Download, label: 'Export', action: 'export' },
@@ -32,7 +31,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ onToolbarAction }) => {
     { icon: Trash2, label: 'Delete', action: 'delete' },
     { type: 'separator' },
     { icon: Calculator, label: 'Run LCA', action: 'run-lca' },
-    { icon: BarChart3, label: 'Run LCIA', action: 'run-lcia' },
+    { icon: BarChart3, label: 'Generate Report', action: 'generate-report' },
     { type: 'separator' },
     { icon: GitBranch, label: 'Product System Editor', action: 'system-editor' },
     { icon: Layers, label: 'Process Editor', action: 'process-editor' },

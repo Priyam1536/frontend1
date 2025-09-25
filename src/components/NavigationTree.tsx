@@ -29,8 +29,7 @@ const NavigationTree: React.FC<NavigationTreeProps> = ({ onItemSelect }) => {
       icon: FolderOpen,
       children: [
         { id: 'solar-project', label: 'Solar Panel LCA Study', icon: FileText, type: 'project' },
-        { id: 'battery-project', label: 'EV Battery Analysis', icon: FileText, type: 'project' },
-        { id: 'packaging-project', label: 'Packaging Comparison', icon: FileText, type: 'project' }
+        { id: 'battery-project', label: 'EV Battery Analysis', icon: FileText, type: 'project' }
       ]
     },
     {
@@ -65,36 +64,6 @@ const NavigationTree: React.FC<NavigationTreeProps> = ({ onItemSelect }) => {
       ]
     },
     {
-      id: 'flow-properties',
-      label: 'Flow Properties',
-      icon: Target,
-      children: [
-        { id: 'mass', label: 'Mass', icon: Target, type: 'property' },
-        { id: 'energy', label: 'Energy', icon: Target, type: 'property' },
-        { id: 'volume', label: 'Volume', icon: Target, type: 'property' }
-      ]
-    },
-    {
-      id: 'units',
-      label: 'Units',
-      icon: SettingsIcon,
-      children: [
-        { id: 'kg', label: 'Kilogram (kg)', icon: SettingsIcon, type: 'unit' },
-        { id: 'mj', label: 'Megajoule (MJ)', icon: SettingsIcon, type: 'unit' },
-        { id: 'liter', label: 'Liter (L)', icon: SettingsIcon, type: 'unit' }
-      ]
-    },
-    {
-      id: 'impact-methods',
-      label: 'Impact Assessment Methods',
-      icon: Database,
-      children: [
-        { id: 'recipe', label: 'ReCiPe 2016', icon: Database, type: 'method' },
-        { id: 'cml', label: 'CML-IA baseline', icon: Database, type: 'method' },
-        { id: 'traci', label: 'TRACI 2.1', icon: Database, type: 'method' }
-      ]
-    },
-    {
       id: 'parameters',
       label: 'Parameters',
       icon: SettingsIcon,
@@ -104,22 +73,10 @@ const NavigationTree: React.FC<NavigationTreeProps> = ({ onItemSelect }) => {
       ]
     },
     {
-      id: 'sources',
-      label: 'Sources',
-      icon: BookOpen,
-      children: [
-        { id: 'ecoinvent', label: 'ecoinvent v3.8', icon: BookOpen, type: 'source' },
-        { id: 'idemat', label: 'IDEMAT 2001', icon: BookOpen, type: 'source' }
-      ]
-    },
-    {
-      id: 'actors',
-      label: 'Actors',
-      icon: Users,
-      children: [
-        { id: 'manufacturer', label: 'Solar Panel Manufacturer', icon: Users, type: 'actor' },
-        { id: 'supplier', label: 'Raw Material Supplier', icon: Users, type: 'actor' }
-      ]
+      id: 'lca-assessments',
+      label: 'LCA Assessments',
+      icon: FileText,
+      children: []
     }
   ];
 
