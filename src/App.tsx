@@ -3,6 +3,7 @@ import MenuBar from './components/MenuBar';
 import Toolbar from './components/Toolbar';
 import NavigationTree from './components/NavigationTree';
 import EditorArea from './components/EditorArea';
+import ConsolePanel from './components/ConsolePanel';
 
 interface Tab {
   id: string;
