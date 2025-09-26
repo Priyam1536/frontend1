@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { Brain, Eye, EyeOff } from 'lucide-react';
+import { Brain, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { authAPI, tokenStorage } from '../utils/api';
 
 const LoginPage = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -11,11 +14,63 @@ const LoginPage = ({ onLogin }) => {
     name: ''
   });
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    if (!formData.email || !formData.password) {
+      setError('Email and password are required');
+      return false;
+    }
+    
+    if (!isLogin) {
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        return false;
+      }
+      
+      if (!formData.name) {
+        setError('Name is required');
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simple validation - in real app, you'd validate properly
-    if (formData.email && formData.password) {
-      onLogin();
+    setError('');
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      let userData;
+      
+      if (isLogin) {
+        // Login request
+        userData = await authAPI.login(formData.email, formData.password);
+      } else {
+        // Signup request
+        userData = await authAPI.signup(formData.name, formData.email, formData.password);
+      }
+      
+      // Store token and user data
+      tokenStorage.setToken(userData.token);
+      tokenStorage.setUserData({
+        id: userData._id,
+        name: userData.name,
+        email: userData.email
+      });
+      
+      // Call the login callback
+      onLogin(userData);
+      
+    } catch (error) {
+      setError(error.message || 'Authentication failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -42,6 +97,15 @@ const LoginPage = ({ onLogin }) => {
             {isLogin ? 'Access your LCA platform' : 'Start your LCA journey'}
           </p>
         </div>
+
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 mt-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -152,9 +216,12 @@ const LoginPage = ({ onLogin }) => {
           <div>
             <button
               type="submit"
-              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              disabled={isLoading}
+              className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
+                ${isLoading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'} 
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
-              {isLogin ? 'Sign In' : 'Create Account'}
+              {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
             </button>
           </div>
 
@@ -162,7 +229,10 @@ const LoginPage = ({ onLogin }) => {
             <button
               type="button"
               className="text-sm font-medium text-blue-600 hover:text-blue-500"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError('');
+              }}
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
