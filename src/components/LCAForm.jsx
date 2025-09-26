@@ -21,11 +21,15 @@ import {
   File,
   FileText,
   ClipboardList,
-  Loader
+  Loader,
+  AlertCircle,
+  ChevronRight,
+  ArrowUpRight
 } from 'lucide-react';
 
-// Lazy load the LCAProcessFlow component to improve initial loading performance
+// Lazy load components
 const LCAProcessFlow = lazy(() => import('./LCAProcessFlow'));
+const LCAInsightsDashboard = lazy(() => import('./LCAInsightsDashboard'));
 
 // Complete form field configuration for all steps
 const formConfig = {
@@ -156,12 +160,22 @@ const formConfig = {
   }
 };
 
-const LCAForm = ({ onComplete, onCancel }) => {
+const LCAForm = ({ onComplete, onCancel, onViewDetailedResults }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [formData, setFormData] = useState({});
+  const [stayOnPage, setStayOnPage] = useState(true); // New state to control navigation
+  
+  // Add new state variables for API interactions
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [aiInsights, setAiInsights] = useState(null);
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+
+  // Backend API URL - should come from environment variables in production
+  const API_URL = 'http://localhost:8000/api/lca';
 
   // Generic input change handler
   const handleInputChange = (e) => {
@@ -172,10 +186,118 @@ const LCAForm = ({ onComplete, onCancel }) => {
   // Navigation handlers
   const handleNext = () => setCurrentStep(currentStep + 1);
   const handlePrevious = () => setCurrentStep(currentStep - 1);
-  const handleSubmit = (e) => {
+  
+  // Updated submit handler to send data to backend
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    
+    console.log("LCA Form Completed with data:", formData);
     setIsCompleted(true);
-    onComplete && onComplete(formData);
+    
+    // Generate insights from AI and save report
+    await generateAiInsights();
+    
+    // Only navigate if explicitly requested
+    if (!stayOnPage && onComplete) {
+      onComplete(formData);
+    }
+  };
+
+  // Function to navigate to dashboard after viewing results
+  const handleBackToDashboard = () => {
+    if (onComplete) {
+      onComplete(formData);
+    }
+  };
+
+  // Function to view detailed results page
+  const handleViewDetailedResults = () => {
+    if (onViewDetailedResults) {
+      onViewDetailedResults(formData, aiInsights);
+    }
+  };
+
+  // Function to send data to backend and get AI insights
+  const generateAiInsights = async () => {
+    setIsGeneratingInsights(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_URL}/generate-recommendations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Include authentication token if available
+          ...localStorage.getItem('authToken') ? 
+            { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } : {}
+        },
+        body: JSON.stringify({ formData }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate LCA insights');
+      }
+      
+      const data = await response.json();
+      console.log("AI Generated Insights:", data);
+      
+      if (data.success && data.report) {
+        setAiInsights(data.report);
+        
+        // Save reportId if returned from server
+        if (data.reportId) {
+          console.log("Report saved with ID:", data.reportId);
+          setFormData(prev => ({ ...prev, savedReportId: data.reportId }));
+        }
+      } else {
+        throw new Error(data.message || 'Failed to generate insights');
+      }
+    } catch (error) {
+      console.error('Error generating insights:', error);
+      setError(error.message || 'Something went wrong generating AI insights');
+    } finally {
+      setIsGeneratingInsights(false);
+    }
+  };
+
+  // Function to get parameter suggestions (could be used for incomplete fields)
+  const getSuggestions = async (partialData) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_URL}/suggest-parameters`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ formData: partialData }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get parameter suggestions');
+      }
+      
+      const data = await response.json();
+      console.log("AI Suggestions:", data);
+      
+      if (data.success && data.suggestions) {
+        // Apply suggestions to form data
+        setFormData(prev => ({
+          ...prev,
+          ...data.suggestions
+        }));
+        return data.suggestions;
+      } else {
+        throw new Error(data.message || 'Failed to get suggestions');
+      }
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      setError(error.message || 'Something went wrong getting suggestions');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Export functionality 
@@ -488,6 +610,71 @@ const LCAForm = ({ onComplete, onCancel }) => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Render AI Insights component
+  const renderAiInsights = () => {
+    if (isGeneratingInsights) {
+      return (
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-6">
+          <div className="flex flex-col items-center justify-center py-8">
+            <Loader className="animate-spin h-8 w-8 text-blue-500 mb-4" />
+            <p className="text-gray-600">Generating AI insights from your LCA data...</p>
+            <p className="text-sm text-gray-500 mt-2">This may take a moment as we analyze your lifecycle data</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="bg-red-50 p-6 rounded-lg border border-red-200 shadow-sm mb-6">
+          <div className="flex items-start">
+            <AlertCircle className="h-6 w-6 text-red-500 mr-3" />
+            <div>
+              <h3 className="text-lg font-medium text-red-800">Error generating insights</h3>
+              <p className="mt-1 text-sm text-red-700">{error}</p>
+              <button 
+                onClick={() => generateAiInsights()}
+                className="mt-3 bg-red-100 hover:bg-red-200 text-red-800 px-4 py-2 rounded text-sm font-medium"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (aiInsights) {
+      return (
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-lg border border-blue-100 shadow-sm mb-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <BarChart3 className="mr-2 h-6 w-6 text-blue-600" />
+            AI-Generated LCA Insights
+          </h3>
+          
+          <div className="mb-4">
+            <h4 className="font-medium text-gray-800 mb-2">Assessment Summary</h4>
+            <p className="text-gray-700 bg-white p-4 rounded-md border border-gray-200">{aiInsights.lca_summary}</p>
+          </div>
+          
+          <div>
+            <h4 className="font-medium text-gray-800 mb-2">Recommendations</h4>
+            <ul className="space-y-3">
+              {aiInsights.recommendations.map((rec, index) => (
+                <li key={index} className="bg-white p-4 rounded-md border border-gray-200 flex">
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl w-full bg-white rounded-lg shadow-md p-6">
@@ -523,17 +710,44 @@ const LCAForm = ({ onComplete, onCancel }) => {
                 type="button"
                 onClick={currentStep === 1 ? onCancel : handlePrevious}
                 className="py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                disabled={isLoading}
               >
                 {currentStep === 1 ? 'Cancel' : <><ArrowLeft className="mr-1 h-4 w-4 inline" /> Previous</>}
               </button>
               
-              <button
-                type="button"
-                onClick={currentStep === 7 ? handleSubmit : handleNext}
-                className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                {currentStep === 7 ? 'Complete LCA' : <>Next <ArrowRight className="ml-1 h-4 w-4 inline" /></>}
-              </button>
+              {currentStep < 7 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Optionally get AI suggestions before moving to next step
+                    // getSuggestions(formData).then(() => handleNext());
+                    handleNext();
+                  }}
+                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <><Loader className="mr-1 h-4 w-4 inline animate-spin" /> Processing...</>
+                  ) : (
+                    <>Next <ArrowRight className="ml-1 h-4 w-4 inline" /></>
+                  )}
+                </button>
+              )}
+              
+              {currentStep === 7 && (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <><Loader className="mr-1 h-4 w-4 inline animate-spin" /> Processing...</>
+                  ) : (
+                    'Complete LCA'
+                  )}
+                </button>
+              )}
             </div>
           </>
         ) : (
@@ -549,6 +763,21 @@ const LCAForm = ({ onComplete, onCancel }) => {
               </p>
             </div>
             
+            {/* AI Insights Section */}
+            {renderAiInsights()}
+            
+            {/* Process Flow Visualization */}
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Process Flow Overview</h3>
+              <Suspense fallback={<div className="flex items-center justify-center h-[400px]"><Loader className="animate-spin h-8 w-8 text-blue-500" /></div>}>
+                <LCAProcessFlow 
+                  key={`results-${processFlowKey}`} 
+                  currentStep={7} 
+                  formData={formData} 
+                />
+              </Suspense>
+            </div>
+            
             {/* Summary display */}
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
               <h4 className="font-medium text-gray-900 mb-4">Summary</h4>
@@ -562,8 +791,17 @@ const LCAForm = ({ onComplete, onCancel }) => {
               </div>
             </div>
             
-            {/* Action buttons */}
+            {/* Action buttons with new navigation options */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {/* View Detailed Results button */}
+              <button
+                onClick={handleViewDetailedResults}
+                className="flex items-center justify-center py-3 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+              >
+                <BarChart3 className="mr-2 h-5 w-5" /> View Detailed Results
+                <ArrowUpRight className="ml-1 h-4 w-4" />
+              </button>
+              
               {/* Export dropdown */}
               <div className="relative">
                 <button
@@ -594,18 +832,33 @@ const LCAForm = ({ onComplete, onCancel }) => {
                 )}
               </div>
               
+              {/* View Full Assessment */}
               <button
                 onClick={() => setShowViewModal(true)}
                 className="flex items-center justify-center py-3 px-6 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 w-full sm:w-auto"
               >
-                <Eye className="mr-2 h-5 w-5" /> View Full Assessment
+                <Eye className="mr-2 h-5 w-5" /> View Assessment Details
+              </button>
+              
+              {/* Back to Dashboard */}
+              <button
+                onClick={handleBackToDashboard}
+                className="flex items-center justify-center py-3 px-6 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 w-full sm:w-auto"
+              >
+                <ChevronRight className="mr-2 h-5 w-5" /> Back to Dashboard
               </button>
             </div>
             
             {/* Reset button */}
             <div className="text-center">
               <button 
-                onClick={() => { setIsCompleted(false); setCurrentStep(1); setFormData({}); }}
+                onClick={() => { 
+                  setIsCompleted(false); 
+                  setCurrentStep(1); 
+                  setFormData({}); 
+                  setAiInsights(null);
+                  setError(null);
+                }}
                 className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
               >
                 Start New Assessment
@@ -639,6 +892,26 @@ const LCAForm = ({ onComplete, onCancel }) => {
                   </Suspense>
                 </div>
               </div>
+              
+              {/* AI Insights in modal if available */}
+              {aiInsights && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">AI Analysis & Recommendations</h3>
+                  <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg border border-blue-100">
+                    <p className="text-gray-700 mb-4">{aiInsights.lca_summary}</p>
+                    
+                    <h4 className="font-medium text-gray-800 mb-2">Recommendations</h4>
+                    <ul className="space-y-2">
+                      {aiInsights.recommendations.map((rec, index) => (
+                        <li key={index} className="flex">
+                          <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-700">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
               
               {Object.entries(sections).map(([title, data]) => renderSection(title, data))}
             </div>
