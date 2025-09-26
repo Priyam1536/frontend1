@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -17,12 +17,23 @@ import {
   ChevronRight,
   Zap,
   Download,
-  Eye
+  Eye,
+  X,
+  File,
+  FileText,
+  FileJson,
+  ClipboardList,
+  Loader
 } from 'lucide-react';
+
+// Lazy load the LCAProcessFlow component to improve initial loading performance
+const LCAProcessFlow = lazy(() => import('./LCAProcessFlow'));
 
 const LCAForm = ({ onComplete, onCancel }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showExportOptions, setShowExportOptions] = useState(false);
   const [formData, setFormData] = useState({
     // Step 1: Metal Information
     metalType: '',
@@ -96,40 +107,204 @@ const LCAForm = ({ onComplete, onCancel }) => {
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
     setIsCompleted(true);
-    onComplete(formData);
+    onComplete && onComplete(formData);
   };
 
-  const handleExport = () => {
-    // Create a JSON blob from the form data
-    const jsonData = JSON.stringify(formData, null, 2);
-    const blob = new Blob([jsonData], { type: 'application/json' });
+  const handleExport = (format = 'json') => {
+    // Hide export options if they were open
+    setShowExportOptions(false);
     
-    // Create a download link and trigger it
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `lca-assessment-${formData.metalType || 'data'}.json`;
-    document.body.appendChild(link);
-    link.click();
+    let data, blob, filename, type;
     
-    // Clean up
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      switch(format) {
+        case 'csv':
+          // Convert form data to CSV format
+          const headers = Object.keys(formData).join(',');
+          const values = Object.values(formData).join(',');
+          data = `${headers}\n${values}`;
+          type = 'text/csv';
+          filename = `lca-assessment-${formData.metalType || 'data'}.csv`;
+          break;
+          
+        case 'pdf':
+          // Show a message that this would generate a PDF in a real implementation
+          alert('PDF export would be implemented with a library like jsPDF in a production environment');
+          return;
+          
+        case 'excel':
+          // Show a message that this would generate an Excel file in a real implementation
+          alert('Excel export would be implemented with a library like xlsx in a production environment');
+          return;
+          
+        case 'json':
+        default:
+          // Create a JSON blob from the form data
+          data = JSON.stringify(formData, null, 2);
+          type = 'application/json';
+          filename = `lca-assessment-${formData.metalType || 'data'}.json`;
+          break;
+      }
+      
+      // Create a blob and trigger download
+      blob = new Blob([data], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('There was an error exporting your data. Please try again.');
+    }
   };
 
   const handleView = () => {
-    // Open a new modal or redirect to view the completed assessment
-    // For now, we'll just show an alert with the data
-    alert("View functionality will be implemented to show the full LCA assessment in a readable format.");
-    console.log("LCA Assessment Data:", formData);
-    
-    // Here you would typically:
-    // 1. Either navigate to a view page
-    // 2. Or open a modal with formatted results
-    // For example:
-    // openModal({ type: 'lcaView', data: formData });
-    // or
-    // navigate('/lca/view', { state: { lcaData: formData } });
+    setShowViewModal(true);
+  };
+
+  const renderAssessmentView = () => {
+    // Helper function to render a section of the assessment data
+    const renderSection = (title, data) => (
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200">
+          {title}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.entries(data).map(([key, value]) => (
+            <div key={key} className="flex justify-between">
+              <span className="text-gray-600">{formatFieldName(key)}:</span>
+              <span className="font-medium text-gray-900">{value || 'Not specified'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+
+    // Helper function to format field names
+    const formatFieldName = (name) => {
+      return name
+        .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+        .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+        .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between camelCase
+    };
+
+    // Group the form data by section
+    const sections = {
+      "Metal Information": {
+        metalType: formData.metalType,
+        miningLocation: formData.miningLocation,
+        oreGrade: formData.oreGrade ? `${formData.oreGrade}%` : '',
+        productionVolume: formData.productionVolume ? `${formData.productionVolume} tonnes` : '',
+        functionalUnit: formData.functionalUnit,
+      },
+      "Mining & Ore Extraction": {
+        energyConsumptionMining: formData.energyConsumptionMining ? `${formData.energyConsumptionMining} MJ/tonne` : '',
+        energyTypeMining: formData.energyTypeMining,
+        waterConsumptionMining: formData.waterConsumptionMining ? `${formData.waterConsumptionMining} m³/tonne` : '',
+        emissionsMining: formData.emissionsMining ? `${formData.emissionsMining} kg CO₂-eq/tonne` : '',
+        emissionsTypeMining: formData.emissionsTypeMining,
+        landUse: formData.landUse ? `${formData.landUse} m²/tonne` : '',
+      },
+      "Processing & Energy": {
+        transportToProcessing: formData.transportToProcessing,
+        transportDistanceToProcessing: formData.transportDistanceToProcessing ? `${formData.transportDistanceToProcessing} km` : '',
+        energySource: formData.energySource,
+        energyConsumptionProcessing: formData.energyConsumptionProcessing ? `${formData.energyConsumptionProcessing} MJ/tonne` : '',
+        processingRoute: formData.processingRoute,
+        recycledInputRate: formData.recycledInputRate ? `${formData.recycledInputRate}%` : '',
+        chemicalInputs: formData.chemicalInputs,
+        recoveryRate: formData.recoveryRate ? `${formData.recoveryRate}%` : '',
+      },
+      "Transport & Supply Chain": {
+        transportDistances: formData.transportDistances ? `${formData.transportDistances} km` : '',
+        transportMode: formData.transportMode,
+        packaging: formData.packaging,
+      },
+      "Use Phase": {
+        productLifetime: formData.productLifetime ? `${formData.productLifetime} years` : '',
+      },
+      "End-of-Life / Circularity": {
+        reuseRate: formData.reuseRate ? `${formData.reuseRate}%` : '',
+        recyclingRate: formData.recyclingRate ? `${formData.recyclingRate}%` : '',
+        recyclingEfficiency: formData.recyclingEfficiency ? `${formData.recyclingEfficiency}%` : '',
+        disposalRoute: formData.disposalRoute,
+        transportDisposal: formData.transportDisposal ? `${formData.transportDisposal} km` : '',
+      },
+      "Impact Metrics": {
+        globalWarmingPotential: formData.globalWarmingPotential ? `${formData.globalWarmingPotential} kg CO₂-eq` : '',
+        acidificationPotential: formData.acidificationPotential ? `${formData.acidificationPotential} kg SO₂-eq` : '',
+        eutrophicationPotential: formData.eutrophicationPotential ? `${formData.eutrophicationPotential} kg PO₄-eq` : '',
+        ozoneDepletionPotential: formData.ozoneDepletionPotential ? `${formData.ozoneDepletionPotential} kg CFC-11-eq` : '',
+        waterScarcityFootprint: formData.waterScarcityFootprint ? `${formData.waterScarcityFootprint} m³-eq` : '',
+        cumulativeEnergyDemand: formData.cumulativeEnergyDemand ? `${formData.cumulativeEnergyDemand} MJ` : '',
+        humanToxicityPotential: formData.humanToxicityPotential ? `${formData.humanToxicityPotential} CTUh` : '',
+        wasteGenerated: formData.wasteGenerated ? `${formData.wasteGenerated} kg` : '',
+        airWaterEmissions: formData.airWaterEmissions,
+        landUseChange: formData.landUseChange ? `${formData.landUseChange} m²` : '',
+      },
+    };
+
+    return (
+      <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900">
+              Life Cycle Assessment for {formData.metalType || 'Metal'}
+            </h2>
+            <button 
+              onClick={() => setShowViewModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="p-6 overflow-y-auto">
+            {/* Process Flow Visualization in the view */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Process Flow Overview</h3>
+              <div className="border border-gray-200 rounded-lg p-4" style={{ height: '400px' }}>
+                <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader className="animate-spin h-8 w-8 text-blue-500" /></div>}>
+                  <LCAProcessFlow currentStep={7} formData={formData} />
+                </Suspense>
+              </div>
+            </div>
+            
+            {/* Render all sections */}
+            {Object.entries(sections).map(([title, data]) => renderSection(title, data))}
+          </div>
+          
+          <div className="p-4 border-t border-gray-200 flex justify-end">
+            <button 
+              onClick={() => setShowViewModal(false)}
+              className="py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 mr-2"
+            >
+              Close
+            </button>
+            <button
+              onClick={() => {
+                setShowViewModal(false);
+                setShowExportOptions(true);
+              }}
+              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <div className="flex items-center">
+                <Download className="mr-1 h-4 w-4" />
+                Export
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Helper function to render progress steps
@@ -1171,7 +1346,7 @@ const LCAForm = ({ onComplete, onCancel }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl w-full bg-white rounded-lg shadow-md p-6">
+      <div className="max-w-5xl w-full bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
           Life Cycle Assessment Form
         </h2>
@@ -1180,41 +1355,54 @@ const LCAForm = ({ onComplete, onCancel }) => {
           <>
             {renderProgressSteps()}
             
-            <form onSubmit={handleSubmit}>
-              {renderFormContent()}
-              
-              <div className="mt-8 flex justify-between">
-                <button
-                  type="button"
-                  onClick={currentStep === 1 ? onCancel : handlePrevious}
-                  className="py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  {currentStep === 1 ? (
-                    'Cancel'
-                  ) : (
-                    <div className="flex items-center">
-                      <ArrowLeft className="mr-1 h-4 w-4" />
-                      Previous
-                    </div>
-                  )}
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={currentStep === 7 ? handleSubmit : handleNext}
-                  className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  {currentStep === 7 ? (
-                    'Complete LCA'
-                  ) : (
-                    <div className="flex items-center">
-                      Next
-                      <ArrowRight className="ml-1 h-4 w-4" />
-                    </div>
-                  )}
-                </button>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Process Flow Visualization */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Process Flow Visualization</h3>
+                <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader className="animate-spin h-8 w-8 text-blue-500" /></div>}>
+                  <LCAProcessFlow currentStep={currentStep} formData={formData} />
+                </Suspense>
               </div>
-            </form>
+              
+              {/* Form Content */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                <form onSubmit={handleSubmit}>
+                  {renderFormContent()}
+                </form>
+              </div>
+            </div>
+            
+            <div className="mt-8 flex justify-between">
+              <button
+                type="button"
+                onClick={currentStep === 1 ? onCancel : handlePrevious}
+                className="py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                {currentStep === 1 ? (
+                  'Cancel'
+                ) : (
+                  <div className="flex items-center">
+                    <ArrowLeft className="mr-1 h-4 w-4" />
+                    Previous
+                  </div>
+                )}
+              </button>
+              
+              <button
+                type="button"
+                onClick={currentStep === 7 ? handleSubmit : handleNext}
+                className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              >
+                {currentStep === 7 ? (
+                  'Complete LCA'
+                ) : (
+                  <div className="flex items-center">
+                    Next
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </div>
+                )}
+              </button>
+            </div>
           </>
         ) : (
           <div className="space-y-8">
@@ -1249,13 +1437,55 @@ const LCAForm = ({ onComplete, onCancel }) => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={handleExport}
-                className="flex items-center justify-center py-3 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
-              >
-                <Download className="mr-2 h-5 w-5" />
-                Export Assessment Data
-              </button>
+              {/* Export button with dropdown options */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportOptions(!showExportOptions)}
+                  className="flex items-center justify-center py-3 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+                >
+                  <Download className="mr-2 h-5 w-5" />
+                  Export Assessment Data
+                </button>
+                
+                {showExportOptions && (
+                  <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <button
+                        onClick={() => handleExport('json')}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                        role="menuitem"
+                      >
+                        <File className="mr-2 h-5 w-5 text-blue-500" />
+                        Export as JSON
+                      </button>
+                      <button
+                        onClick={() => handleExport('csv')}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                        role="menuitem"
+                      >
+                        <FileText className="mr-2 h-5 w-5 text-green-500" />
+                        Export as CSV
+                      </button>
+                      <button
+                        onClick={() => handleExport('excel')}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                        role="menuitem"
+                      >
+                        <File className="mr-2 h-5 w-5 text-green-700" />
+                        Export as Excel
+                      </button>
+                      <button
+                        onClick={() => handleExport('pdf')}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                        role="menuitem"
+                      >
+                        <ClipboardList className="mr-2 h-5 w-5 text-red-500" />
+                        Export as PDF
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               <button
                 onClick={handleView}
@@ -1333,6 +1563,17 @@ const LCAForm = ({ onComplete, onCancel }) => {
           </div>
         )}
       </div>
+      
+      {/* View Modal */}
+      {showViewModal && renderAssessmentView()}
+      
+      {/* Click outside to close export options */}
+      {showExportOptions && (
+        <div 
+          className="fixed inset-0 z-0" 
+          onClick={() => setShowExportOptions(false)}
+        ></div>
+      )}
     </div>
   );
 };
