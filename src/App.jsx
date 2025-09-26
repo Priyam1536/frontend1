@@ -7,13 +7,18 @@ import Toolbar from './components/Toolbar.jsx';
 import NavigationTree from './components/NavigationTree.jsx';
 import EditorArea from './components/EditorArea.jsx';
 import Dashboard from './components/Dashboard';
+
 import { tokenStorage, authAPI } from './utils/api.jsx';
+
+import PathwayComparisonModal from './components/PathwayComparisonModal.jsx';
+
 
 function App() {
   // Initialize login state from token storage
   const [isLoggedIn, setIsLoggedIn] = useState(!!tokenStorage.getToken());
   const [userData, setUserData] = useState(tokenStorage.getUserData());
   const [showLCAForm, setShowLCAForm] = useState(false);
+  const [showPathwayComparison, setShowPathwayComparison] = useState(false);
   const [reports, setReports] = useState([]);
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState('');
@@ -68,6 +73,8 @@ function App() {
   };
 
   const handleItemSelect = (item) => {
+    if (!item) return; // Guard against null/undefined items
+    
     const existingTab = tabs.find(tab => tab.id === item.id);
     
     if (existingTab) {
@@ -113,6 +120,10 @@ function App() {
     setShowLCAForm(true);
   };
 
+  const handleComparePathways = () => {
+    setShowPathwayComparison(true);
+  };
+
   const handleLCAFormComplete = (formData) => {
     // Generate a new report from the form data
     const newReport = {
@@ -132,15 +143,31 @@ function App() {
     setShowLCAForm(false);
   };
 
+  const handleClosePathwayComparison = () => {
+    setShowPathwayComparison(false);
+  };
+
   const handleViewReport = (reportId) => {
     console.log('Viewing report:', reportId);
     // Here you would implement report viewing functionality
+    const report = reports.find(r => r.id === reportId);
+    if (report) {
+      // Create a tab for this report
+      handleItemSelect({
+        id: report.id,
+        label: report.name,
+        type: 'report',
+        data: report
+      });
+    }
   };
 
+  // Render login page if not logged in
   if (!isLoggedIn) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
+  // Render LCA form if showing form
   if (showLCAForm) {
     return (
       <LCAForm 
@@ -150,6 +177,15 @@ function App() {
     );
   }
 
+  if (showPathwayComparison) {
+    return (
+      <PathwayComparisonModal 
+        onClose={handleClosePathwayComparison}
+      />
+    );
+  }
+
+  // Render main application UI
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
       <MenuBar onMenuAction={handleMenuAction} />
@@ -167,6 +203,7 @@ function App() {
                 reports={reports}
                 onNewReport={handleNewReport}
                 onViewReport={handleViewReport}
+                onComparePathways={handleComparePathways}
               />
             </div>
           ) : (
