@@ -6,6 +6,7 @@ import MenuBar from './components/MenuBar.jsx';
 import Toolbar from './components/Toolbar.jsx';
 import NavigationTree from './components/NavigationTree.jsx';
 import EditorArea from './components/EditorArea.jsx';
+import Dashboard from './components/Dashboard';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
