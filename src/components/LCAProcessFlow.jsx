@@ -178,31 +178,32 @@ const LCAProcessFlow = ({ currentStep, formData }) => {
     const centerVisualization = () => {
       if (!containerRef.current) return;
       
-      const { clientWidth, clientHeight } = containerRef.current;
+      const container = containerRef.current;
+      const { clientWidth, clientHeight } = container;
       
-      // Center horizontally and vertically with proper offsets
+      // Center the visualization in the container
       const centerX = (clientWidth / 2) - (400 * zoom);
       const centerY = (clientHeight / 2) - (305 * zoom);
       
       setPosition({ x: centerX, y: centerY });
     };
+    
+    // Center immediately when component mounts
+    centerVisualization();
+    
+    // Center again after a short delay to ensure container is fully rendered
+    const timer = setTimeout(() => {
+      centerVisualization();
+      isInitialRender.current = false;
+    }, 200);
+    
+    return () => clearTimeout(timer);
+  }, [zoom]); // Re-center when zoom changes
 
-    // Center on initial render and if container or zoom changes
-    if (isInitialRender.current) {
-      // Use a small timeout to ensure the container has been properly sized
-      const timer = setTimeout(() => {
-        centerVisualization();
-        isInitialRender.current = false;
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [zoom]);
-
-  // Handle window resize to keep visualization centered
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      if (!containerRef.current || isDragging) return;
+      if (isDragging || !containerRef.current) return;
       
       const { clientWidth, clientHeight } = containerRef.current;
       const centerX = (clientWidth / 2) - (400 * zoom);
@@ -210,11 +211,9 @@ const LCAProcessFlow = ({ currentStep, formData }) => {
       
       setPosition({ x: centerX, y: centerY });
     };
-
+    
     window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
+    return () => window.removeEventListener('resize', handleResize);
   }, [zoom, isDragging]);
 
   // Add event listeners

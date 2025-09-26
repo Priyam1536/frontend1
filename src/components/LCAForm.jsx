@@ -269,7 +269,7 @@ const LCAForm = ({ onComplete, onCancel }) => {
     );
   };
 
-  // Progress steps indicator
+  // Progress steps indicator with text above icons instead of below
   const renderProgressSteps = () => {
     const steps = [
       { name: 'Metal Info', icon: LayoutGrid },
@@ -286,14 +286,14 @@ const LCAForm = ({ onComplete, onCancel }) => {
     return (
       <div className="relative mb-12">
         {/* Progress bar */}
-        <div className="absolute top-7 left-0 right-0 h-1 bg-gray-200 z-0">
+        <div className="absolute top-24 left-0 right-0 h-1 bg-gray-200 z-0">
           <div 
             className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500"
             style={{ width: `${progress}%` }}
           ></div>
         </div>
         
-        {/* Step indicators */}
+        {/* Step indicators with text ABOVE icons */}
         <div className="flex items-center justify-between relative z-10 px-2">
           {steps.map((step, idx) => {
             const stepNum = idx + 1;
@@ -303,24 +303,25 @@ const LCAForm = ({ onComplete, onCancel }) => {
             
             return (
               <div key={stepNum} className="flex flex-col items-center">
+                {/* Text now appears ABOVE the icon */}
+                <div className={`text-xs font-medium text-center max-w-[80px] mb-2 
+                  ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'}`}>
+                  {step.name}
+                </div>
                 <div 
-                  className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 shadow-md transition-all duration-300
+                  className={`w-14 h-14 rounded-full flex items-center justify-center shadow-md transition-all duration-300
                     ${isActive ? 'bg-gradient-to-br from-blue-500 to-green-500 text-white scale-110' : 
                       isCompleted ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white' : 
                       'bg-white text-gray-400 border border-gray-200'}`}
                 >
                   {isCompleted ? <CheckCircle className="h-6 w-6" /> : <StepIcon className="h-6 w-6" />}
                 </div>
-                <div className={`text-xs font-medium text-center max-w-[80px] 
-                  ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'}`}>
-                  {step.name}
-                </div>
               </div>
             );
           })}
         </div>
         
-        <div className="mt-2 text-center text-sm font-medium text-blue-600">{progress}% Complete</div>
+        <div className="mt-6 text-center text-sm font-medium text-blue-600">{progress}% Complete</div>
       </div>
     );
   };
@@ -428,7 +429,11 @@ const LCAForm = ({ onComplete, onCancel }) => {
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Process Flow Overview</h3>
               <div className="border border-gray-200 rounded-lg p-4" style={{ height: '400px' }}>
                 <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader className="animate-spin h-8 w-8 text-blue-500" /></div>}>
-                  <LCAProcessFlow currentStep={7} formData={formData} />
+                  <LCAProcessFlow 
+                    key={`modal-${processFlowKey}`} 
+                    currentStep={7} 
+                    formData={formData} 
+                  />
                 </Suspense>
               </div>
             </div>
@@ -470,6 +475,19 @@ const LCAForm = ({ onComplete, onCancel }) => {
     setFormData(initializeFormData());
   }, []);
 
+  // Add a properly centered initialization for the LCAProcessFlow component
+  const [processFlowKey, setProcessFlowKey] = useState(0);
+
+  // Force re-render of the LCAProcessFlow component when it first loads
+  useEffect(() => {
+    // Reset the form and center the process flow on component mount
+    const timer = setTimeout(() => {
+      setProcessFlowKey(prevKey => prevKey + 1);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl w-full bg-white rounded-lg shadow-md p-6">
@@ -480,11 +498,15 @@ const LCAForm = ({ onComplete, onCancel }) => {
             {renderProgressSteps()}
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Process Flow Visualization */}
+              {/* Process Flow Visualization with key to force re-render */}
               <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Process Flow Visualization</h3>
                 <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader className="animate-spin h-8 w-8 text-blue-500" /></div>}>
-                  <LCAProcessFlow currentStep={currentStep} formData={formData} />
+                  <LCAProcessFlow 
+                    key={processFlowKey} 
+                    currentStep={currentStep} 
+                    formData={formData} 
+                  />
                 </Suspense>
               </div>
               
@@ -593,8 +615,47 @@ const LCAForm = ({ onComplete, onCancel }) => {
         )}
       </div>
       
-      {/* View Modal */}
-      {showViewModal && renderAssessmentView()}
+      {/* View Modal with improved process flow centering */}
+      {showViewModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Life Cycle Assessment for {formData.metalType || 'Metal'}</h2>
+              <button onClick={() => setShowViewModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Process Flow Overview</h3>
+                <div className="border border-gray-200 rounded-lg p-4" style={{ height: '400px' }}>
+                  <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader className="animate-spin h-8 w-8 text-blue-500" /></div>}>
+                    <LCAProcessFlow 
+                      key={`modal-${processFlowKey}`} 
+                      currentStep={7} 
+                      formData={formData} 
+                    />
+                  </Suspense>
+                </div>
+              </div>
+              
+              {Object.entries(sections).map(([title, data]) => renderSection(title, data))}
+            </div>
+            
+            <div className="p-4 border-t border-gray-200 flex justify-end">
+              <button 
+                onClick={() => setShowViewModal(false)}
+                className="py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 mr-2"
+              >Close</button>
+              <button
+                onClick={() => { setShowViewModal(false); setShowExportOptions(true); }}
+                className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              ><Download className="mr-1 h-4 w-4 inline" /> Export</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
