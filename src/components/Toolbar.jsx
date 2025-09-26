@@ -15,11 +15,7 @@ import {
   Settings
 } from 'lucide-react';
 
-interface ToolbarProps {
-  onToolbarAction: (action: string) => void;
-}
-
-const Toolbar: React.FC<ToolbarProps> = ({ onToolbarAction }) => {
+const Toolbar = ({ onToolbarAction }) => {
   const toolbarItems = [
     { icon: Plus, label: 'New Project', action: 'new-project' },
     { type: 'separator' },

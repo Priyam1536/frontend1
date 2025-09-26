@@ -11,12 +11,7 @@ import {
   Brain
 } from 'lucide-react';
 
-interface SidebarProps {
-  activeView: string;
-  setActiveView: (view: string) => void;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
+const Sidebar = ({ activeView, setActiveView }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'projects', label: 'Projects', icon: FolderOpen },

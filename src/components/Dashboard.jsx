@@ -10,7 +10,7 @@ import {
   PieChart
 } from 'lucide-react';
 
-const Dashboard: React.FC = () => {
+const Dashboard = () => {
   const metrics = [
     {
       title: 'Active Projects',

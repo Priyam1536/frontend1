@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { Save, Plus } from 'lucide-react';
 
-interface FlowEditorProps {
-  data?: any;
-}
-
-const FlowEditor: React.FC<FlowEditorProps> = ({ data }) => {
+const FlowEditor = ({ data }) => {
   const [flowData, setFlowData] = useState({
     name: data?.name || 'New Flow',
     category: data?.category || '',
@@ -98,11 +94,13 @@ const FlowEditor: React.FC<FlowEditorProps> = ({ data }) => {
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-medium text-blue-900 mb-2">Flow Properties</h3>
-            <p className="text-sm text-blue-700 mb-3">Define the quantitative properties of this flow</p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>Add Property</span>
+            <h3 className="text-md font-medium text-blue-800 mb-2">Properties</h3>
+            <p className="text-sm text-blue-600 mb-3">
+              Define additional properties for this flow
+            </p>
+            <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors text-sm flex items-center">
+              <Plus className="h-3 w-3 mr-1" />
+              Add Property
             </button>
           </div>
         </div>

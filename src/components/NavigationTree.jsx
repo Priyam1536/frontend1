@@ -15,12 +15,8 @@ import {
   Settings as SettingsIcon
 } from 'lucide-react';
 
-interface NavigationTreeProps {
-  onItemSelect: (item: any) => void;
-}
-
-const NavigationTree: React.FC<NavigationTreeProps> = ({ onItemSelect }) => {
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['projects', 'processes', 'flows']));
+const NavigationTree = ({ onItemSelect }) => {
+  const [expandedNodes, setExpandedNodes] = useState(new Set(['projects', 'processes', 'flows']));
 
   const treeData = [
     {
@@ -80,7 +76,7 @@ const NavigationTree: React.FC<NavigationTreeProps> = ({ onItemSelect }) => {
     }
   ];
 
-  const toggleNode = (nodeId: string) => {
+  const toggleNode = (nodeId) => {
     const newExpanded = new Set(expandedNodes);
     if (newExpanded.has(nodeId)) {
       newExpanded.delete(nodeId);
@@ -90,7 +86,7 @@ const NavigationTree: React.FC<NavigationTreeProps> = ({ onItemSelect }) => {
     setExpandedNodes(newExpanded);
   };
 
-  const renderTreeNode = (node: any, level: number = 0) => {
+  const renderTreeNode = (node, level = 0) => {
     const isExpanded = expandedNodes.has(node.id);
     const hasChildren = node.children && node.children.length > 0;
     const Icon = node.icon;
@@ -98,36 +94,40 @@ const NavigationTree: React.FC<NavigationTreeProps> = ({ onItemSelect }) => {
     return (
       <div key={node.id}>
         <div
-          className={`flex items-center py-1 px-2 hover:bg-gray-100 cursor-pointer rounded transition-colors`}
-          style={{ paddingLeft: `${level * 16 + 8}px` }}
-          onClick={() => {
-            if (hasChildren) {
-              toggleNode(node.id);
-            } else {
-              onItemSelect(node);
-            }
-          }}
+          className={`flex items-center px-2 py-1 hover:bg-blue-50 cursor-pointer ${
+            level > 0 ? 'ml-4' : ''
+          }`}
         >
           {hasChildren ? (
-            isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-gray-500 mr-1" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-gray-500 mr-1" />
-            )
+            <button 
+              onClick={() => toggleNode(node.id)}
+              className="p-1 mr-1 rounded-sm hover:bg-blue-100"
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
+              )}
+            </button>
           ) : (
             <div className="w-5 mr-1" />
           )}
-          <Icon className="h-4 w-4 text-gray-600 mr-2" />
-          <span className="text-sm text-gray-800 select-none">{node.label}</span>
-          {hasChildren && (
-            <span className="ml-auto text-xs text-gray-400">
-              ({node.children.length})
-            </span>
+          
+          {Icon && (
+            <Icon className={`h-4 w-4 mr-2 ${!node.type ? 'text-blue-500' : 'text-gray-500'}`} />
           )}
+          
+          <span 
+            className="text-sm"
+            onClick={() => hasChildren ? toggleNode(node.id) : onItemSelect(node)}
+          >
+            {node.label}
+          </span>
         </div>
-        {hasChildren && isExpanded && (
-          <div>
-            {node.children.map((child: any) => renderTreeNode(child, level + 1))}
+        
+        {isExpanded && hasChildren && (
+          <div className="border-l border-gray-200 ml-2.5">
+            {node.children.map(child => renderTreeNode(child, level + 1))}
           </div>
         )}
       </div>
@@ -135,12 +135,12 @@ const NavigationTree: React.FC<NavigationTreeProps> = ({ onItemSelect }) => {
   };
 
   return (
-    <div className="bg-white border-r border-gray-200 h-full overflow-y-auto">
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="font-semibold text-gray-900 text-sm">Navigation</h3>
-      </div>
-      <div className="p-2">
-        {treeData.map((node) => renderTreeNode(node))}
+    <div className="h-full overflow-auto bg-white border-r border-gray-200">
+      <div className="p-3">
+        <h3 className="font-medium text-gray-900 text-sm">OreSense Navigator</h3>
+        <div className="mt-3">
+          {treeData.map(node => renderTreeNode(node))}
+        </div>
       </div>
     </div>
   );

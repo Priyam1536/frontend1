@@ -10,7 +10,7 @@ import {
   Activity
 } from 'lucide-react';
 
-const ImpactAssessment: React.FC = () => {
+const ImpactAssessment = () => {
   const [selectedMethod, setSelectedMethod] = useState('ReCiPe');
   const [selectedProject, setSelectedProject] = useState('solar-panel');
 
@@ -105,7 +105,7 @@ const ImpactAssessment: React.FC = () => {
     }
   ];
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status) => {
     switch (status) {
       case 'good':
         return <CheckCircle className="h-5 w-5 text-green-600" />;
@@ -116,7 +116,7 @@ const ImpactAssessment: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case 'good':
         return 'border-green-200 bg-green-50';

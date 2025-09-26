@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { Save, Play, BarChart3 } from 'lucide-react';
 
-interface ProjectEditorProps {
-  data?: any;
-}
-
-const ProjectEditor: React.FC<ProjectEditorProps> = ({ data }) => {
+const ProjectEditor = ({ data }) => {
   const [projectData, setProjectData] = useState({
     name: data?.name || 'New Project',
     description: data?.description || '',
@@ -98,25 +94,28 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ data }) => {
             <h3 className="text-lg font-medium text-gray-900 mb-4">Product Systems</h3>
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-gray-600 text-center">No product systems added yet</p>
-              <div className="text-center mt-4">
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                  Add Product System
-                </button>
-              </div>
             </div>
+            <button className="mt-3 inline-flex items-center px-3 py-1.5 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50">
+              + Add Product System
+            </button>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Results</h3>
-              <button className="text-blue-600 hover:text-blue-700 flex items-center space-x-1">
-                <BarChart3 className="h-4 w-4" />
-                <span>View Detailed Results</span>
-              </button>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Impact Assessment Methods</h3>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
+                <div>
+                  <h4 className="font-medium">IPCC 2021 GWP100</h4>
+                  <p className="text-sm text-gray-500">Global Warming Potential</p>
+                </div>
+                <div className="flex space-x-1">
+                  <input type="checkbox" className="rounded text-blue-600" checked />
+                </div>
+              </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-8 text-center">
-              <p className="text-gray-600">Run analysis to see results</p>
-            </div>
+            <button className="mt-3 inline-flex items-center px-3 py-1.5 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50">
+              + Add Impact Assessment Method
+            </button>
           </div>
         </div>
       </div>

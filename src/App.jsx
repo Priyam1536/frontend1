@@ -1,60 +1,44 @@
 import React, { useState } from 'react';
-import LoginPage from './components/LoginPage';
-import LCAForm from './components/LCAForm';
-import ReportsDashboard from './components/ReportsDashboard';
-import MenuBar from './components/MenuBar';
-import Toolbar from './components/Toolbar';
-import NavigationTree from './components/NavigationTree';
-import EditorArea from './components/EditorArea';
-
-interface Tab {
-  id: string;
-  title: string;
-  type: string;
-  data?: any;
-}
-
-interface Report {
-  id: string;
-  name: string;
-  metalType: string;
-  createdDate: string;
-  status: 'completed' | 'draft';
-  co2Impact: string;
-}
+import LoginPage from './components/LoginPage.jsx';
+import LCAForm from './components/LCAForm.jsx';
+import ReportsDashboard from './components/ReportsDashboard.jsx';
+import MenuBar from './components/MenuBar.jsx';
+import Toolbar from './components/Toolbar.jsx';
+import NavigationTree from './components/NavigationTree.jsx';
+import EditorArea from './components/EditorArea.jsx';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLCAForm, setShowLCAForm] = useState(false);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [tabs, setTabs] = useState<Tab[]>([]);
+  const [reports, setReports] = useState([]);
+  const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState('');
 
   const handleLogin = () => {
     setIsLoggedIn(true);
   };
 
-  const handleMenuAction = (action: string) => {
+  const handleMenuAction = (action) => {
     console.log('Menu action:', action);
     if (action === 'new-project') {
       setShowLCAForm(true);
     }
   };
 
-  const handleToolbarAction = (action: string) => {
+  const handleToolbarAction = (action) => {
     console.log('Toolbar action:', action);
     if (action === 'new-project') {
       setShowLCAForm(true);
     }
   };
 
-  const handleItemSelect = (item: any) => {
+  const handleItemSelect = (item) => {
     const existingTab = tabs.find(tab => tab.id === item.id);
     
     if (existingTab) {
       setActiveTab(existingTab.id);
     } else {
-      const newTab: Tab = {
+      const newTab = {
         id: item.id,
         title: item.label,
         type: item.type || 'general',
@@ -65,7 +49,7 @@ function App() {
     }
   };
 
-  const handleTabClose = (tabId: string) => {
+  const handleTabClose = (tabId) => {
     const newTabs = tabs.filter(tab => tab.id !== tabId);
     setTabs(newTabs);
     
@@ -77,7 +61,7 @@ function App() {
   };
 
   const handleNewTab = () => {
-    const newTab: Tab = {
+    const newTab = {
       id: `new-${Date.now()}`,
       title: 'New Item',
       type: 'general'
@@ -86,7 +70,7 @@ function App() {
     setActiveTab(newTab.id);
   };
 
-  const handleTabChange = (tabId: string) => {
+  const handleTabChange = (tabId) => {
     setActiveTab(tabId);
   };
 
@@ -94,9 +78,9 @@ function App() {
     setShowLCAForm(true);
   };
 
-  const handleLCAFormComplete = (formData: any) => {
+  const handleLCAFormComplete = (formData) => {
     // Generate a new report from the form data
-    const newReport: Report = {
+    const newReport = {
       id: `report-${Date.now()}`,
       name: `${formData.metalType || 'Metal'} LCA Report`,
       metalType: formData.metalType || 'Unknown',
@@ -113,7 +97,7 @@ function App() {
     setShowLCAForm(false);
   };
 
-  const handleViewReport = (reportId: string) => {
+  const handleViewReport = (reportId) => {
     console.log('Viewing report:', reportId);
     // Here you would implement report viewing functionality
   };

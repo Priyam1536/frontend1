@@ -8,27 +8,12 @@ import {
   Eye
 } from 'lucide-react';
 
-interface Report {
-  id: string;
-  name: string;
-  metalType: string;
-  createdDate: string;
-  status: 'completed' | 'draft';
-  co2Impact: string;
-}
-
-interface ReportsDashboardProps {
-  reports: Report[];
-  onNewReport: () => void;
-  onViewReport: (reportId: string) => void;
-}
-
-const ReportsDashboard: React.FC<ReportsDashboardProps> = ({ 
+const ReportsDashboard = ({ 
   reports, 
   onNewReport, 
   onViewReport 
 }) => {
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case 'completed':
         return 'bg-green-100 text-green-800';
@@ -98,27 +83,34 @@ const ReportsDashboard: React.FC<ReportsDashboardProps> = ({
               </span>
             </div>
 
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">CO₂ Impact:</span>
-                <span className="font-medium text-gray-900">{report.co2Impact}</span>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-center text-sm text-gray-500 mb-1">
+                  <Calendar className="h-3.5 w-3.5 mr-1" />
+                  <span>Created</span>
+                </div>
+                <div className="text-gray-900 font-medium">{report.createdDate}</div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Created:</span>
-                <span className="font-medium text-gray-900">{report.createdDate}</span>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-center text-sm text-gray-500 mb-1">
+                  <TrendingUp className="h-3.5 w-3.5 mr-1" />
+                  <span>CO₂ Impact</span>
+                </div>
+                <div className="text-gray-900 font-medium">{report.co2Impact}</div>
               </div>
             </div>
-
-            <div className="flex items-center space-x-2">
-              <button
+            
+            <div className="flex space-x-2">
+              <button 
                 onClick={() => onViewReport(report.id)}
-                className="flex-1 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors flex items-center justify-center space-x-1"
+                className="flex-1 flex items-center justify-center py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
               >
-                <Eye className="h-4 w-4" />
-                <span>View</span>
+                <Eye className="h-4 w-4 mr-1.5" />
+                View
               </button>
-              <button className="bg-gray-50 text-gray-700 px-3 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center justify-center">
-                <Download className="h-4 w-4" />
+              <button className="flex-1 flex items-center justify-center py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">
+                <Download className="h-4 w-4 mr-1.5" />
+                Export
               </button>
             </div>
           </div>

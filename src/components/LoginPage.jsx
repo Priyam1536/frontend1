@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { Brain, Eye, EyeOff } from 'lucide-react';
 
-interface LoginPageProps {
-  onLogin: () => void;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+const LoginPage = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -15,7 +11,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     name: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     // Simple validation - in real app, you'd validate properly
     if (formData.email && formData.password) {
@@ -23,7 +19,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -100,13 +96,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 />
                 <button
                   type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                    <EyeOff className="h-5 w-5 text-gray-400" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    <Eye className="h-5 w-5 text-gray-400" />
                   )}
                 </button>
               </div>
@@ -117,24 +113,46 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                   Confirm Password
                 </label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required={!isLogin}
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Confirm your password"
-                />
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    required={!isLogin}
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Confirm your password"
+                  />
+                </div>
               </div>
             )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                Remember me
+              </label>
+            </div>
+
+            <div className="text-sm">
+              <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                Forgot your password?
+              </a>
+            </div>
           </div>
 
           <div>
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-2 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-green-700 transition-all duration-200"
+              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               {isLogin ? 'Sign In' : 'Create Account'}
             </button>
@@ -143,10 +161,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           <div className="text-center">
             <button
               type="button"
+              className="text-sm font-medium text-blue-600 hover:text-blue-500"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-blue-600 hover:text-blue-700 font-medium"
             >
-              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
           </div>
         </form>

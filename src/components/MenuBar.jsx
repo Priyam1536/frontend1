@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import { ChevronDown, FileText, Download, Upload, Database, LogOut, Undo, Redo, Copy, Cast as Paste, Settings, Eye, Navigation, Play, Calculator, BarChart3, Shuffle, TrendingUp, AppWindow as Window, HelpCircle, BookOpen, Info, RefreshCw } from 'lucide-react';
 
-interface MenuBarProps {
-  onMenuAction: (action: string) => void;
-}
-
-const MenuBar: React.FC<MenuBarProps> = ({ onMenuAction }) => {
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+const MenuBar = ({ onMenuAction }) => {
+  const [activeMenu, setActiveMenu] = useState(null);
 
   const menuItems = [
     {
@@ -73,11 +69,11 @@ const MenuBar: React.FC<MenuBarProps> = ({ onMenuAction }) => {
     }
   ];
 
-  const handleMenuClick = (menuLabel: string) => {
+  const handleMenuClick = (menuLabel) => {
     setActiveMenu(activeMenu === menuLabel ? null : menuLabel);
   };
 
-  const handleItemClick = (action: string) => {
+  const handleItemClick = (action) => {
     onMenuAction(action);
     setActiveMenu(null);
   };
@@ -98,22 +94,22 @@ const MenuBar: React.FC<MenuBarProps> = ({ onMenuAction }) => {
             </button>
             
             {activeMenu === menu.label && (
-              <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+              <div className="absolute left-0 mt-1 w-56 bg-white border border-gray-200 shadow-lg rounded-md py-1 z-10">
                 {menu.items.map((item, index) => (
                   item.type === 'separator' ? (
-                    <div key={index} className="border-t border-gray-100 my-1" />
+                    <div key={`sep-${index}`} className="border-t border-gray-100 my-1" />
                   ) : (
                     <button
-                      key={index}
+                      key={item.action}
                       onClick={() => handleItemClick(item.action)}
-                      className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
                     >
-                      <div className="flex items-center space-x-3">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </div>
+                      {item.icon && <item.icon className="h-4 w-4 mr-3 text-gray-400" />}
+                      <span>{item.label}</span>
                       {item.shortcut && (
-                        <span className="text-xs text-gray-400">{item.shortcut}</span>
+                        <span className="ml-auto text-xs text-gray-400">
+                          {item.shortcut}
+                        </span>
                       )}
                     </button>
                   )
@@ -123,6 +119,13 @@ const MenuBar: React.FC<MenuBarProps> = ({ onMenuAction }) => {
           </div>
         ))}
       </div>
+      
+      {activeMenu && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setActiveMenu(null)}
+        />
+      )}
     </div>
   );
 };

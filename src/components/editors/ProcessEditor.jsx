@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { Save, Plus, Trash2, Calculator } from 'lucide-react';
 
-interface ProcessEditorProps {
-  data?: any;
-}
-
-const ProcessEditor: React.FC<ProcessEditorProps> = ({ data }) => {
+const ProcessEditor = ({ data }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [processData, setProcessData] = useState({
     name: data?.name || 'New Process',
@@ -98,26 +94,26 @@ const ProcessEditor: React.FC<ProcessEditorProps> = ({ data }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            <tr>
-              <td className="px-4 py-3 text-sm text-gray-900">Electricity, grid mix</td>
-              <td className="px-4 py-3 text-sm text-gray-900">45.2</td>
-              <td className="px-4 py-3 text-sm text-gray-900">kWh</td>
-              <td className="px-4 py-3">
-                <button className="text-red-600 hover:text-red-800">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-4 py-3 text-sm text-gray-900">Silicon, raw</td>
-              <td className="px-4 py-3 text-sm text-gray-900">1.0</td>
-              <td className="px-4 py-3 text-sm text-gray-900">kg</td>
-              <td className="px-4 py-3">
-                <button className="text-red-600 hover:text-red-800">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </td>
-            </tr>
+            {processData.inputs.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
+                  No inputs added yet
+                </td>
+              </tr>
+            ) : (
+              processData.inputs.map((input, index) => (
+                <tr key={index}>
+                  <td className="px-4 py-3 text-sm">{input.flow}</td>
+                  <td className="px-4 py-3 text-sm">{input.amount}</td>
+                  <td className="px-4 py-3 text-sm">{input.unit}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <button className="text-red-600 hover:text-red-800">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -141,37 +137,30 @@ const ProcessEditor: React.FC<ProcessEditorProps> = ({ data }) => {
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Flow</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Unit</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Type</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            <tr>
-              <td className="px-4 py-3 text-sm text-gray-900">Silicon, purified</td>
-              <td className="px-4 py-3 text-sm text-gray-900">0.95</td>
-              <td className="px-4 py-3 text-sm text-gray-900">kg</td>
-              <td className="px-4 py-3">
-                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Product</span>
-              </td>
-              <td className="px-4 py-3">
-                <button className="text-red-600 hover:text-red-800">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-4 py-3 text-sm text-gray-900">CO2, fossil</td>
-              <td className="px-4 py-3 text-sm text-gray-900">12.4</td>
-              <td className="px-4 py-3 text-sm text-gray-900">kg</td>
-              <td className="px-4 py-3">
-                <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Emission</span>
-              </td>
-              <td className="px-4 py-3">
-                <button className="text-red-600 hover:text-red-800">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </td>
-            </tr>
+            {processData.outputs.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
+                  No outputs added yet
+                </td>
+              </tr>
+            ) : (
+              processData.outputs.map((output, index) => (
+                <tr key={index}>
+                  <td className="px-4 py-3 text-sm">{output.flow}</td>
+                  <td className="px-4 py-3 text-sm">{output.amount}</td>
+                  <td className="px-4 py-3 text-sm">{output.unit}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <button className="text-red-600 hover:text-red-800">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -186,53 +175,49 @@ const ProcessEditor: React.FC<ProcessEditorProps> = ({ data }) => {
         return renderInputsTab();
       case 'outputs':
         return renderOutputsTab();
-      case 'allocation':
-        return <div className="text-gray-500">Allocation settings will be implemented here</div>;
-      case 'parameters':
-        return <div className="text-gray-500">Process parameters will be implemented here</div>;
-      case 'documentation':
-        return <div className="text-gray-500">Documentation section will be implemented here</div>;
       default:
-        return renderGeneralTab();
+        return (
+          <div className="text-center py-10 text-gray-500">
+            Content for {activeTab} is under development
+          </div>
+        );
     }
   };
 
   return (
     <div className="h-full flex flex-col">
-      <div className="border-b border-gray-200 bg-white px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Process Editor</h2>
-          <div className="flex items-center space-x-3">
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
-              <Calculator className="h-4 w-4" />
-              <span>Calculate</span>
-            </button>
+          <h2 className="text-xl font-bold text-gray-900">{processData.name}</h2>
+          <div className="flex items-center space-x-2">
             <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
               <Save className="h-4 w-4" />
               <span>Save</span>
             </button>
+            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
+              <Calculator className="h-4 w-4" />
+              <span>Calculate</span>
+            </button>
           </div>
         </div>
       </div>
-
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-8 px-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+      
+      <div className="flex border-b border-gray-200">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === tab.id
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
-
+      
       <div className="flex-1 overflow-auto p-6">
         {renderTabContent()}
       </div>

@@ -10,7 +10,7 @@ import {
   Filter
 } from 'lucide-react';
 
-const ProcessManager: React.FC = () => {
+const ProcessManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -86,7 +86,7 @@ const ProcessManager: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case 'Verified':
         return 'bg-green-100 text-green-800';

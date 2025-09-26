@@ -12,7 +12,7 @@ import {
   Activity
 } from 'lucide-react';
 
-const DatabaseManager: React.FC = () => {
+const DatabaseManager = () => {
   const [activeTab, setActiveTab] = useState('processes');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -88,7 +88,7 @@ const DatabaseManager: React.FC = () => {
     ]
   };
 
-  const getQualityColor = (quality: string) => {
+  const getQualityColor = (quality) => {
     switch (quality) {
       case 'High':
         return 'bg-green-100 text-green-800';

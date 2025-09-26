@@ -10,7 +10,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 
-const ProjectManager: React.FC = () => {
+const ProjectManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -72,7 +72,7 @@ const ProjectManager: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case 'Completed':
         return 'bg-green-100 text-green-800';
@@ -85,7 +85,7 @@ const ProjectManager: React.FC = () => {
     }
   };
 
-  const getImpactColor = (impact: string) => {
+  const getImpactColor = (impact) => {
     switch (impact) {
       case 'Very High':
         return 'bg-red-100 text-red-800';
