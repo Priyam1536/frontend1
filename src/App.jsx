@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LoginPage from './components/LoginPage.jsx';
 import LCAForm from './components/LCAForm.jsx';
 import ReportsDashboard from './components/ReportsDashboard.jsx';
@@ -7,16 +7,50 @@ import Toolbar from './components/Toolbar.jsx';
 import NavigationTree from './components/NavigationTree.jsx';
 import EditorArea from './components/EditorArea.jsx';
 import Dashboard from './components/Dashboard';
+import { tokenStorage, authAPI } from './utils/api.jsx';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Initialize login state from token storage
+  const [isLoggedIn, setIsLoggedIn] = useState(!!tokenStorage.getToken());
+  const [userData, setUserData] = useState(tokenStorage.getUserData());
   const [showLCAForm, setShowLCAForm] = useState(false);
   const [reports, setReports] = useState([]);
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState('');
 
-  const handleLogin = () => {
+  // Verify token is valid on initial load
+  useEffect(() => {
+    const verifyToken = async () => {
+      const token = tokenStorage.getToken();
+      if (token) {
+        try {
+          // Attempt to get user profile with the stored token
+          const profile = await authAPI.getProfile(token);
+          setUserData(profile);
+          setIsLoggedIn(true);
+        } catch (error) {
+          // Token is invalid, clear it
+          console.error("Invalid token:", error);
+          tokenStorage.removeToken();
+          tokenStorage.clearUserData();
+          setIsLoggedIn(false);
+        }
+      }
+    };
+    
+    verifyToken();
+  }, []);
+
+  const handleLogin = (userData) => {
     setIsLoggedIn(true);
+    setUserData(userData);
+  };
+
+  const handleLogout = () => {
+    tokenStorage.removeToken();
+    tokenStorage.clearUserData();
+    setIsLoggedIn(false);
+    setUserData(null);
   };
 
   const handleMenuAction = (action) => {
