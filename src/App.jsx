@@ -7,6 +7,7 @@ import Toolbar from './components/Toolbar.jsx';
 import NavigationTree from './components/NavigationTree.jsx';
 import EditorArea from './components/EditorArea.jsx';
 import Dashboard from './components/Dashboard';
+import LCAResultsPage from './components/LCAResultsPage.jsx';
 
 import { tokenStorage, authAPI } from './utils/api.jsx';
 
@@ -22,6 +23,9 @@ function App() {
   const [reports, setReports] = useState([]);
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState('');
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentReport, setCurrentReport] = useState(null);
+  const [currentInsights, setCurrentInsights] = useState(null);
 
   // Verify token is valid on initial load
   useEffect(() => {
@@ -162,6 +166,35 @@ function App() {
     }
   };
 
+  const handleViewDetailedResults = (formData, insights) => {
+    // Create a report if not already in reports list
+    let report = reports.find(r => 
+      r.formData && r.formData.metalType === formData.metalType
+    );
+    
+    if (!report) {
+      report = {
+        id: Date.now().toString(),
+        name: `LCA for ${formData.metalType || 'Metal'}`,
+        metalType: formData.metalType || 'Unknown',
+        createdDate: new Date().toLocaleDateString(),
+        status: 'Completed',
+        co2Impact: formData.globalWarmingPotential ? 
+          `${formData.globalWarmingPotential} kg CO₂-eq` : 'Not calculated',
+        formData: formData
+      };
+      setReports([report, ...reports]);
+    }
+    
+    setCurrentReport(report);
+    setCurrentInsights(insights);
+    setCurrentPage('results');
+  };
+
+  const handleBackToDashboard = () => {
+    setCurrentPage('dashboard');
+  };
+
   // Render login page if not logged in
   if (!isLoggedIn) {
     return <LoginPage onLogin={handleLogin} />;
@@ -217,6 +250,15 @@ function App() {
           )}
         </div>
       </div>
+
+      {currentPage === 'results' && currentReport && (
+        <LCAResultsPage
+          formData={currentReport.formData}
+          insights={currentInsights}
+          onBack={handleBackToDashboard}
+          onExport={(format) => console.log(`Export in ${format} format requested`)}
+        />
+      )}
     </div>
   );
 }
