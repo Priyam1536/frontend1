@@ -9,7 +9,8 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  Loader
 } from 'lucide-react';
 
 const LCAProcessFlow = ({ currentStep, formData }) => {
@@ -19,6 +20,9 @@ const LCAProcessFlow = ({ currentStep, formData }) => {
   const [zoom, setZoom] = useState(1);
   const [showInfo, setShowInfo] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
+  const [nodeInsights, setNodeInsights] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const containerRef = useRef(null);
   const startPosRef = useRef(null);
   const animationRef = useRef(null);
@@ -168,8 +172,81 @@ const LCAProcessFlow = ({ currentStep, formData }) => {
   };
 
   // Handle node click
-  const handleNodeClick = (nodeId) => {
-    setSelectedNode(selectedNode === nodeId ? null : nodeId);
+  const handleNodeClick = async (nodeId) => {
+    if (selectedNode === nodeId) {
+      setSelectedNode(null);
+      return;
+    }
+    
+    setSelectedNode(nodeId);
+    
+    // Check if we already have insights for this node
+    if (!nodeInsights[nodeId]) {
+      await fetchNodeInsights(nodeId);
+    }
+  };
+  
+  // Fetch dynamic insights from Gemini API
+  const fetchNodeInsights = async (nodeId) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log(`Fetching insights for node: ${node.name} (ID: ${nodeId})`);
+      
+      const response = await fetch('/api/lca/node-insights', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nodeId,
+          nodeType: node.name,
+          formData
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Server error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(`Received insights data:`, data);
+      
+      if (data.success && data.insights) {
+        // Store the insights for this node
+        setNodeInsights(prev => ({
+          ...prev,
+          [nodeId]: data.insights
+        }));
+        
+        // Log a warning if one was returned
+        if (data.warning) {
+          console.warn(`Node insights warning: ${data.warning}`);
+        }
+      } else {
+        throw new Error(data.message || 'Invalid response format');
+      }
+    } catch (err) {
+      console.error('Error fetching node insights:', err);
+      setError(`Failed to load insights: ${err.message}`);
+      
+      // Create a basic fallback insight directly in the frontend as last resort
+      const nodeName = node.name;
+      setNodeInsights(prev => ({
+        ...prev,
+        [nodeId]: {
+          circularOpportunities: `Circular opportunities for ${nodeName} phase could not be loaded. Please try again later.`,
+          environmentalImpacts: `Environmental impact information for ${nodeName} phase could not be loaded. Please try again later.`
+        }
+      }));
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Get summary information for the selected node
@@ -177,88 +254,111 @@ const LCAProcessFlow = ({ currentStep, formData }) => {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return null;
     
+    // Base details that don't change
+    let summary = {
+      title: '',
+      details: [],
+      circularOpportunities: '',
+      environmentalImpacts: ''
+    };
+    
+    // Get dynamic insights if available
+    const insights = nodeInsights[nodeId];
+    
     switch(node.id) {
       case 1:
-        return {
-          title: 'Material Extraction',
+        summary = {
+          title: 'Raw Material Extraction',
           details: [
             { label: 'Metal Type', value: formData.metalType || 'Not specified' },
             { label: 'Mining Location', value: formData.miningLocation || 'Not specified' },
             { label: 'Ore Grade', value: formData.oreGrade ? `${formData.oreGrade}%` : 'Not specified' },
             { label: 'Land Use', value: formData.landUse ? `${formData.landUse} m²/tonne` : 'Not specified' }
           ],
-          circularOpportunities: 'Optimize extraction to minimize waste and use recycled input when possible.',
-          environmentalImpacts: 'Land disturbance, habitat loss, energy use, water consumption.'
+          // Use dynamic data if available, otherwise use static fallback
+          circularOpportunities: insights?.circularOpportunities || 'Loading insights...',
+          environmentalImpacts: insights?.environmentalImpacts || 'Loading insights...'
         };
+        break;
       case 2:
-        return {
+        summary = {
           title: 'Processing',
           details: [
             { label: 'Energy Source', value: formData.energySource || 'Not specified' },
             { label: 'Energy Consumption', value: formData.energyConsumptionProcessing ? `${formData.energyConsumptionProcessing} MJ/tonne` : 'Not specified' },
             { label: 'Recovery Rate', value: formData.recoveryRate ? `${formData.recoveryRate}%` : 'Not specified' }
           ],
-          circularOpportunities: 'Recover process heat, utilize by-products, implement closed-loop water systems.',
-          environmentalImpacts: 'Air emissions, water pollution, energy consumption, chemical waste.'
+          circularOpportunities: insights?.circularOpportunities || 'Loading insights...',
+          environmentalImpacts: insights?.environmentalImpacts || 'Loading insights...'
         };
+        break;
       case 3:
-        return {
+        summary = {
           title: 'Manufacturing',
           details: [
             { label: 'Processing Route', value: formData.processingRoute || 'Not specified' },
             { label: 'Recycled Input Rate', value: formData.recycledInputRate ? `${formData.recycledInputRate}%` : 'Not specified' }
           ],
-          circularOpportunities: 'Design for disassembly, use recycled materials, minimize scrap and waste.',
-          environmentalImpacts: 'Resource consumption, energy use, process emissions, waste generation.'
+          circularOpportunities: insights?.circularOpportunities || 'Loading insights...',
+          environmentalImpacts: insights?.environmentalImpacts || 'Loading insights...'
         };
+        break;
       case 4:
-        return {
+        summary = {
           title: 'Distribution',
           details: [
             { label: 'Transport Mode', value: formData.transportMode || 'Not specified' },
             { label: 'Transport Distance', value: formData.transportDistances ? `${formData.transportDistances} km` : 'Not specified' },
             { label: 'Packaging', value: formData.packaging || 'Not specified' }
           ],
-          circularOpportunities: 'Optimize routes, use returnable packaging, employ low-carbon transport.',
-          environmentalImpacts: 'Fuel consumption, greenhouse gas emissions, packaging waste.'
+          circularOpportunities: insights?.circularOpportunities || 'Loading insights...',
+          environmentalImpacts: insights?.environmentalImpacts || 'Loading insights...'
         };
+        break;
       case 5:
-        return {
+        summary = {
           title: 'Use Phase',
           details: [
             { label: 'Product Lifetime', value: formData.productLifetime ? `${formData.productLifetime} years` : 'Not specified' }
           ],
-          circularOpportunities: 'Design for longevity, enable repair and upgradeability, facilitate sharing models.',
-          environmentalImpacts: 'Energy consumption during use, wear and tear, maintenance impacts.'
+          circularOpportunities: insights?.circularOpportunities || 'Loading insights...',
+          environmentalImpacts: insights?.environmentalImpacts || 'Loading insights...'
         };
+        break;
       case 6:
-        return {
+        summary = {
           title: 'End of Life',
           details: [
             { label: 'Recycling Rate', value: formData.recyclingRate ? `${formData.recyclingRate}%` : 'Not specified' },
             { label: 'Reuse Rate', value: formData.reuseRate ? `${formData.reuseRate}%` : 'Not specified' },
             { label: 'Disposal Route', value: formData.disposalRoute || 'Not specified' }
           ],
-          circularOpportunities: 'Enhance collection systems, improve sorting technology, develop recycling infrastructure.',
-          environmentalImpacts: 'Landfill use, incineration emissions, resource loss if not recycled.'
+          circularOpportunities: insights?.circularOpportunities || 'Loading insights...',
+          environmentalImpacts: insights?.environmentalImpacts || 'Loading insights...'
         };
+        break;
       case 7:
-        return {
+        summary = {
           title: 'Impact Analysis',
           details: [
             { label: 'Global Warming Potential', value: formData.globalWarmingPotential ? `${formData.globalWarmingPotential} kg CO₂-eq` : 'Not specified' },
             { label: 'Water Scarcity', value: formData.waterScarcityFootprint ? `${formData.waterScarcityFootprint} m³-eq` : 'Not specified' },
             { label: 'Energy Demand', value: formData.cumulativeEnergyDemand ? `${formData.cumulativeEnergyDemand} MJ` : 'Not specified' }
           ],
-          circularOpportunities: 'Identify hotspots for intervention, quantify benefits of circular strategies.',
-          environmentalImpacts: 'Provides metrics for climate change, resource depletion, ecosystem impacts.'
+          circularOpportunities: insights?.circularOpportunities || 'Identify hotspots for intervention, quantify benefits of circular strategies.',
+          environmentalImpacts: insights?.environmentalImpacts || 'Provides metrics for climate change, resource depletion, ecosystem impacts.'
         };
+        break;
       default:
-        return {
+        summary = {
           title: 'Information Not Available',
-          details: []
+          details: [],
+          circularOpportunities: 'No data available for this node type.',
+          environmentalImpacts: 'No data available for this node type.'
         };
     }
+    
+    return summary;
   };
 
   // Center the visualization when component mounts
@@ -564,17 +664,17 @@ const LCAProcessFlow = ({ currentStep, formData }) => {
         </svg>
       </div>
       
-      {/* Node details with improved visibility */}
-      {nodeSummary && (
+      {/* Node details with improved visibility and loading states */}
+      {selectedNode && (
         <div className="absolute top-4 right-4 w-80 bg-white p-5 rounded-lg shadow-lg border border-gray-200 z-10">
           <h3 className="text-xl font-medium mb-3" style={{ color: nodes.find(n => n.id === selectedNode)?.color || '#3B82F6' }}>
-            {nodeSummary.title}
+            {nodeSummary?.title}
           </h3>
           
           <div className="space-y-4">
             <div className="border-b border-gray-200 pb-3">
               <h4 className="text-sm font-medium text-gray-700 mb-2">Details</h4>
-              {nodeSummary.details.map((detail, index) => (
+              {nodeSummary?.details.map((detail, index) => (
                 <div key={index} className="flex justify-between text-sm mb-1">
                   <span className="text-gray-600">{detail.label}:</span>
                   <span className="font-medium">{detail.value}</span>
@@ -584,13 +684,33 @@ const LCAProcessFlow = ({ currentStep, formData }) => {
             
             <div className="border-b border-gray-200 pb-3">
               <h4 className="text-sm font-medium text-gray-700 mb-2">Circular Opportunities</h4>
-              <p className="text-sm text-gray-600">{nodeSummary.circularOpportunities}</p>
+              {loading && !nodeInsights[selectedNode]?.circularOpportunities ? (
+                <div className="flex items-center text-sm text-gray-500">
+                  <Loader size={14} className="animate-spin mr-2" />
+                  Loading AI insights...
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600">{nodeSummary?.circularOpportunities}</p>
+              )}
             </div>
             
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-2">Environmental Impacts</h4>
-              <p className="text-sm text-gray-600">{nodeSummary.environmentalImpacts}</p>
+              {loading && !nodeInsights[selectedNode]?.environmentalImpacts ? (
+                <div className="flex items-center text-sm text-gray-500">
+                  <Loader size={14} className="animate-spin mr-2" />
+                  Loading AI insights...
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600">{nodeSummary?.environmentalImpacts}</p>
+              )}
             </div>
+            
+            {error && (
+              <div className="text-sm text-red-500 mt-2">
+                {error}
+              </div>
+            )}
           </div>
           
           <button 
