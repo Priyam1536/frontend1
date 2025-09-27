@@ -235,7 +235,6 @@ function App() {
               <ReportsDashboard 
                 reports={reports}
                 onNewReport={handleNewReport}
-                onViewReport={handleViewReport}
                 onComparePathways={handleComparePathways}
               />
             </div>

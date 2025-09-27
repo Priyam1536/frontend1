@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 // Lazy load components for better performance
-const LCAProcessFlow = lazy(() => import('./LCAProcessFlow'));
+const LCAProcessFlow = lazy(() => import('./EnhancedLCAProcessFlow'));
 const LCAInsightsDashboard = lazy(() => import('./LCAInsightsDashboard'));
 
 const LCAResultsPage = ({ 

@@ -5,48 +5,136 @@ import {
   Truck, 
   Timer, 
   Recycle, 
-  LayoutGrid,
   Zap,
-  ArrowRight,
-  Info
+  Info,
+  ChevronDown,
+  ChevronUp,
+  X
 } from 'lucide-react';
 
 const LCAProcessFlow = ({ currentStep, formData }) => {
   const [selectedNode, setSelectedNode] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1.2); // Adjusted zoom level for better initial view
+  const [zoom, setZoom] = useState(1);
   const [showInfo, setShowInfo] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(false);
   const containerRef = useRef(null);
   const startPosRef = useRef(null);
+  const animationRef = useRef(null);
   const isInitialRender = useRef(true);
 
-  // Adjusted node positions with more space between them
-  const nodes = [
-    { id: 1, name: 'Material Extraction', icon: Mountain, x: 400, y: 130, step: 1, color: '#3B82F6' }, // Blue
-    { id: 2, name: 'Processing', icon: Factory, x: 620, y: 230, step: 3, color: '#10B981' }, // Green - moved further right
-    { id: 3, name: 'Manufacturing', icon: Factory, x: 620, y: 380, step: 3, color: '#8B5CF6' }, // Purple - moved further right
-    { id: 4, name: 'Distribution', icon: Truck, x: 400, y: 480, step: 4, color: '#F59E0B' }, // Amber - moved further down
-    { id: 5, name: 'Use Phase', icon: Timer, x: 180, y: 380, step: 5, color: '#EC4899' }, // Pink - moved further left
-    { id: 6, name: 'End of Life', icon: Recycle, x: 180, y: 230, step: 6, color: '#6366F1' }, // Indigo - moved further left
-    { id: 7, name: 'Impact Analysis', icon: Zap, x: 400, y: 305, step: 7, color: '#EF4444' }, // Red
+  // Modern node positions with equidistant circular layout
+  const centerX = 400;
+  const centerY = 300;
+  const radius = 170;
+  const impactRadius = 80;
+  
+  // Calculate node positions in a circular layout
+  const calculateNodePosition = (index, totalNodes) => {
+    // Start from the top (270 degrees in unit circle, -90 in SVG)
+    const angle = (index / totalNodes) * 2 * Math.PI - Math.PI / 2;
+    return {
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle)
+    };
+  };
+
+  // Create nodes with calculated positions
+  const mainNodes = [
+    { id: 1, name: 'Raw Material', icon: Mountain, step: 1, color: '#3B82F6', gradient: ['#3B82F6', '#2563EB'] }, // Blue
+    { id: 2, name: 'Processing', icon: Factory, step: 2, color: '#10B981', gradient: ['#10B981', '#059669'] }, // Green
+    { id: 3, name: 'Manufacturing', icon: Factory, step: 3, color: '#8B5CF6', gradient: ['#8B5CF6', '#7C3AED'] }, // Purple
+    { id: 4, name: 'Distribution', icon: Truck, step: 4, color: '#F59E0B', gradient: ['#F59E0B', '#D97706'] }, // Amber
+    { id: 5, name: 'Use Phase', icon: Timer, step: 5, color: '#EC4899', gradient: ['#EC4899', '#DB2777'] }, // Pink
+    { id: 6, name: 'End of Life', icon: Recycle, step: 6, color: '#6366F1', gradient: ['#6366F1', '#4F46E5'] }, // Indigo
   ];
 
-  // Define connections between nodes to create a circular flow
+  // Assign positions to nodes
+  const nodes = mainNodes.map((node, index) => {
+    const position = calculateNodePosition(index, mainNodes.length);
+    return { ...node, x: position.x, y: position.y };
+  });
+
+  // Add central impact analysis node
+  nodes.push({ 
+    id: 7, 
+    name: 'Impact Analysis', 
+    icon: Zap, 
+    x: centerX, 
+    y: centerY, 
+    step: 7, 
+    color: '#EF4444', 
+    gradient: ['#EF4444', '#DC2626'] // Red
+  });
+
+  // Define connections between nodes
   const connections = [
+    // Main cycle connections
     { from: 1, to: 2 },
     { from: 2, to: 3 },
     { from: 3, to: 4 },
     { from: 4, to: 5 },
     { from: 5, to: 6 },
     { from: 6, to: 1, isRecycling: true },
-    { from: 7, to: 1 },
-    { from: 7, to: 2 },
-    { from: 7, to: 3 },
-    { from: 7, to: 4 },
-    { from: 7, to: 5 },
-    { from: 7, to: 6 },
+    
+    // Impact analysis connections (bidirectional)
+    { from: 7, to: 1, isImpact: true },
+    { from: 7, to: 2, isImpact: true },
+    { from: 7, to: 3, isImpact: true },
+    { from: 7, to: 4, isImpact: true },
+    { from: 7, to: 5, isImpact: true },
+    { from: 7, to: 6, isImpact: true },
+    { from: 1, to: 7, isDataFlow: true },
+    { from: 2, to: 7, isDataFlow: true },
+    { from: 3, to: 7, isDataFlow: true },
+    { from: 4, to: 7, isDataFlow: true },
+    { from: 5, to: 7, isDataFlow: true },
+    { from: 6, to: 7, isDataFlow: true },
   ];
+  
+  // Auto-rotation animation effect
+  useEffect(() => {
+    if (!autoRotate) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      return;
+    }
+
+    let startTime;
+    const rotationSpeed = 0.00005; // Adjust for faster/slower rotation
+
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const elapsedTime = timestamp - startTime;
+      
+      // Calculate rotation angle based on elapsed time
+      const rotationAngle = elapsedTime * rotationSpeed;
+      
+      // Update nodes' positions
+      nodes.forEach((node, index) => {
+        if (node.id !== 7) { // Skip the central node
+          const originalPosition = calculateNodePosition(index / mainNodes.length + rotationAngle, 1);
+          node.x = originalPosition.x;
+          node.y = originalPosition.y;
+        }
+      });
+      
+      // Force re-render
+      setPosition(prev => ({ ...prev }));
+      
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [autoRotate]);
 
   // Handle mouse down for dragging
   const handleMouseDown = (e) => {

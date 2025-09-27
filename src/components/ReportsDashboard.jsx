@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, FileText, Eye, ArrowRightLeft, Loader } from 'lucide-react';
 import ReportsList from './ReportsList';
+import ReportViewer from './ReportViewer';
 
-const ReportsDashboard = ({ reports: initialReports = [], onNewReport, onViewReport, onComparePathways }) => {
+const ReportsDashboard = ({ reports: initialReports = [], onNewReport, onComparePathways }) => {
+  const [selectedReportId, setSelectedReportId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reports, setReports] = useState([]);
@@ -49,8 +51,26 @@ const ReportsDashboard = ({ reports: initialReports = [], onNewReport, onViewRep
       } catch (error) {
         console.error('Error fetching reports:', error);
         setError(error.message);
-        // Fall back to using the initial reports passed as props
-        if (initialReports && initialReports.length > 0) {
+        // Fall back to using localStorage reports or the initial reports passed as props
+        const savedReports = JSON.parse(localStorage.getItem('savedReports') || '[]');
+        
+        if (savedReports && savedReports.length > 0) {
+          // Format localStorage reports to match the expected structure
+          const formattedReports = savedReports.map(report => ({
+            id: report.id || Date.now().toString(),
+            name: report.title || `${report.metalType} Assessment`,
+            metalType: report.metalType || 'Unknown',
+            createdDate: new Date(report.date).toLocaleDateString(),
+            status: 'completed',
+            co2Impact: report.formData?.globalWarmingPotential ? 
+              `${report.formData.globalWarmingPotential} kg CO₂-eq` : 'Not calculated',
+            formData: report.formData || {},
+            insights: report.insights || '',
+            recommendations: report.recommendations || []
+          }));
+          
+          setReports(formattedReports);
+        } else if (initialReports && initialReports.length > 0) {
           setReports(initialReports);
         }
       } finally {
@@ -91,6 +111,33 @@ const ReportsDashboard = ({ reports: initialReports = [], onNewReport, onViewRep
       alert(`Error deleting report: ${error.message}`);
     }
   };
+
+  // Handler for viewing a report
+  const handleViewReport = (reportId) => {
+    console.log("ReportsDashboard: Setting selected report ID to:", reportId);
+    setSelectedReportId(reportId);
+  };
+
+  // Handler for going back to the list
+  const handleBackToList = () => {
+    setSelectedReportId(null);
+  };
+
+  // If a report is selected, show the report viewer
+  if (selectedReportId) {
+    // Find the report data first to pass directly
+    const reportData = reports.find(r => String(r.id) === String(selectedReportId));
+    
+    return (
+      <div className="space-y-6">
+        <ReportViewer 
+          reportId={selectedReportId}
+          reportData={reportData} // Pass the full report data if available
+          onBack={handleBackToList} 
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -146,7 +193,7 @@ const ReportsDashboard = ({ reports: initialReports = [], onNewReport, onViewRep
       ) : (
         <ReportsList 
           reports={reports}
-          onViewReport={onViewReport} 
+          onViewReport={handleViewReport} 
           onDeleteReport={handleDeleteReport}
         />
       )}

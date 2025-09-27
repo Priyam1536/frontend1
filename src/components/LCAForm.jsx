@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 // Lazy load components
-const LCAProcessFlow = lazy(() => import('./LCAProcessFlow'));
+const LCAProcessFlow = lazy(() => import('./EnhancedLCAProcessFlow'));
 const LCAInsightsDashboard = lazy(() => import('./LCAInsightsDashboard'));
 
 // Complete form field configuration for all steps

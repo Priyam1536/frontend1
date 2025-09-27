@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   FileText, 
   Eye, 
@@ -9,6 +9,46 @@ import {
 
 // Updated to receive reports as props instead of fetching internally
 const ReportsList = ({ reports = [], onViewReport, onDeleteReport }) => {
+  // On mount, ensure we have all reports properly saved to localStorage for viewing
+  useEffect(() => {
+    if (reports && reports.length > 0) {
+      try {
+        const savedReports = JSON.parse(localStorage.getItem('savedReports') || '[]');
+        
+        // Ensure all displayed reports are in localStorage
+        const updatedReports = [...savedReports];
+        let needsUpdate = false;
+        
+        reports.forEach(report => {
+          // Check if this report exists in localStorage by ID
+          const existingIndex = updatedReports.findIndex(r => 
+            String(r.id) === String(report.id)
+          );
+          
+          if (existingIndex === -1) {
+            // Add this report to localStorage
+            updatedReports.push({
+              id: report.id,
+              date: new Date().toISOString(),
+              title: report.name || `${report.metalType} Life Cycle Assessment`,
+              metalType: report.metalType,
+              insights: report.insights || "",
+              recommendations: report.recommendations || [],
+              formData: report.formData || {}
+            });
+            needsUpdate = true;
+          }
+        });
+        
+        if (needsUpdate) {
+          localStorage.setItem('savedReports', JSON.stringify(updatedReports));
+          console.log("Updated localStorage with all current reports");
+        }
+      } catch (err) {
+        console.error("Error syncing reports with localStorage:", err);
+      }
+    }
+  }, [reports]);
   // Format date for display
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -68,8 +108,16 @@ const ReportsList = ({ reports = [], onViewReport, onDeleteReport }) => {
             
             <div className="border-t border-gray-200 bg-gray-50 px-4 py-3 flex justify-between">
               <button
-                onClick={() => onViewReport && onViewReport(report.id)}
+                onClick={() => {
+                  console.log("View button clicked for report:", report);
+                  if (onViewReport) {
+                    const reportId = String(report.id);
+                    console.log("Viewing report with ID:", reportId);
+                    onViewReport(reportId);
+                  }
+                }}
                 className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                aria-label={`View report for ${report.name}`}
               >
                 <Eye className="mr-1 h-4 w-4" /> View
               </button>
@@ -77,6 +125,12 @@ const ReportsList = ({ reports = [], onViewReport, onDeleteReport }) => {
               <button
                 onClick={() => {
                   if (window.confirm('Are you sure you want to delete this report?')) {
+                    // Remove from localStorage
+                    const savedReports = JSON.parse(localStorage.getItem('savedReports') || '[]');
+                    const updatedReports = savedReports.filter(r => r.id !== report.id);
+                    localStorage.setItem('savedReports', JSON.stringify(updatedReports));
+                    
+                    // Call the parent component's delete handler
                     onDeleteReport && onDeleteReport(report.id);
                   }
                 }}
