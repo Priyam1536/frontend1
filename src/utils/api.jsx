@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://salem-mario-lease-untitled.trycloudflare.com/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 // Auth related API calls
 export const authAPI = {
@@ -26,14 +26,14 @@ export const authAPI = {
   },
   
   // Register new user
-  signup: async (name, email, password) => {
+  signup: async (name, email, password, role) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       });
       
       if (!response.ok) {

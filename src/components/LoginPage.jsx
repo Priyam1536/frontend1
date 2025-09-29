@@ -12,7 +12,8 @@ const LoginPage = ({ onLogin }) => {
     email: '',
     password: '',
     confirmPassword: '',
-    name: ''
+    name: '',
+    role: 'Guest'  // Default role changed from user to Guest
   });
 
   const validateForm = () => {
@@ -54,7 +55,7 @@ const LoginPage = ({ onLogin }) => {
         userData = await authAPI.login(formData.email, formData.password);
       } else {
         // Signup request
-        userData = await authAPI.signup(formData.name, formData.email, formData.password);
+        userData = await authAPI.signup(formData.name, formData.email, formData.password, formData.role);
       }
       
       // Store token and user data
@@ -62,7 +63,8 @@ const LoginPage = ({ onLogin }) => {
       tokenStorage.setUserData({
         id: userData._id,
         name: userData.name,
-        email: userData.email
+        email: userData.email,
+        role: userData.role
       });
       
       // Call the login callback
@@ -123,6 +125,26 @@ const LoginPage = ({ onLogin }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter your full name"
                 />
+              </div>
+            )}
+
+            {!isLogin && (
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="Guest">Guest</option>
+                  <option value="metallurgist">Metallurgist</option>
+                  <option value="Auditor">Auditor</option>
+                  <option value="admin">Admin</option>
+                </select>
               </div>
             )}
 
