@@ -24,7 +24,8 @@ import {
   Loader,
   AlertCircle,
   ChevronRight,
-  ArrowUpRight
+  ArrowUpRight,
+  Lightbulb // Added for prediction button
 } from 'lucide-react';
 
 // Lazy load components
@@ -168,6 +169,11 @@ const LCAForm = ({ onComplete, onCancel, onViewDetailedResults }) => {
   const [formData, setFormData] = useState({});
   const [stayOnPage, setStayOnPage] = useState(true); // New state to control navigation
   
+  // Add new state for prediction functionality
+  const [isPredicting, setIsPredicting] = useState(false);
+  const [predictionSuccess, setPredictionSuccess] = useState(false);
+  const [predictedFields, setPredictedFields] = useState([]);
+
   // Add new state variables for API interactions
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -347,13 +353,19 @@ const LCAForm = ({ onComplete, onCancel, onViewDetailedResults }) => {
     const { name, label, type, icon, options, hint, suffix } = field;
     const FieldIcon = icon || LayoutGrid; // Fallback icon
     
+    // Check if this field was recently predicted
+    const isPredicted = predictedFields.includes(name);
+    
     return (
-      <div key={name} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <div key={name} className={`bg-white p-4 rounded-lg border ${isPredicted ? 'border-green-400 shadow-md' : 'border-gray-200 shadow-sm'} hover:shadow-md transition-shadow`}>
         <div className="flex items-center mb-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-            <FieldIcon className="h-5 w-5 text-blue-600" />
+          <div className={`w-10 h-10 rounded-full ${isPredicted ? 'bg-green-100' : 'bg-blue-100'} flex items-center justify-center mr-3`}>
+            <FieldIcon className={`h-5 w-5 ${isPredicted ? 'text-green-600' : 'text-blue-600'}`} />
           </div>
-          <label className="block text-sm font-medium text-gray-700">{label}</label>
+          <label className="block text-sm font-medium text-gray-700">
+            {label}
+            {isPredicted && <span className="ml-2 text-xs text-green-600">(AI suggested)</span>}
+          </label>
         </div>
         
         {type === 'select' ? (
@@ -361,7 +373,7 @@ const LCAForm = ({ onComplete, onCancel, onViewDetailedResults }) => {
             name={name}
             value={formData[name] || ''}
             onChange={handleInputChange}
-            className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className={`block w-full p-2 border ${isPredicted ? 'border-green-300' : 'border-gray-300'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500`}
           >
             <option value="">Select {label.toLowerCase()}</option>
             {options.map(opt => (
@@ -375,7 +387,7 @@ const LCAForm = ({ onComplete, onCancel, onViewDetailedResults }) => {
               name={name}
               value={formData[name] || ''}
               onChange={handleInputChange}
-              className={`block w-full p-2 border border-gray-300 rounded${suffix ? '-l' : ''}-md focus:ring-blue-500 focus:border-blue-500`}
+              className={`block w-full p-2 border ${isPredicted ? 'border-green-300' : 'border-gray-300'} rounded${suffix ? '-l' : ''}-md focus:ring-blue-500 focus:border-blue-500`}
               placeholder={`e.g. ${name === 'oreGrade' ? '0.5' : ''}`}
             />
             {suffix && (
@@ -464,15 +476,46 @@ const LCAForm = ({ onComplete, onCancel, onViewDetailedResults }) => {
     
     return (
       <div>
-        {stepConfig.title && (
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-xl mb-6 border border-blue-100">
-            <div className="flex items-center mb-3">
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-xl mb-6 border border-blue-100">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center">
               {stepConfig.icon && <stepConfig.icon className="h-6 w-6 text-blue-600 mr-2" />}
               <h3 className="text-xl font-semibold text-gray-800">{stepConfig.title}</h3>
             </div>
-            {stepConfig.description && <p className="text-sm text-gray-600">{stepConfig.description}</p>}
+            
+            {/* Add AI prediction button */}
+            <button
+              type="button"
+              onClick={predictMissingFields}
+              disabled={isPredicting}
+              className="flex items-center px-3 py-1 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md border border-blue-200 transition-colors"
+            >
+              {isPredicting ? (
+                <Loader className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Lightbulb className="h-4 w-4 mr-1" />
+              )}
+              {isPredicting ? 'Predicting...' : 'Predict Fields'}
+            </button>
           </div>
-        )}
+          {stepConfig.description && <p className="text-sm text-gray-600">{stepConfig.description}</p>}
+          
+          {/* Show success message */}
+          {predictionSuccess && (
+            <div className="mt-3 bg-green-50 text-green-800 p-2 rounded-md text-sm border border-green-200 flex items-center">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              AI has successfully predicted missing field values!
+            </div>
+          )}
+          
+          {/* Show error message */}
+          {error && (
+            <div className="mt-3 bg-red-50 text-red-800 p-2 rounded-md text-sm border border-red-200 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              {error}
+            </div>
+          )}
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {stepConfig.fields && stepConfig.fields.map(field => renderField(field))}
@@ -673,6 +716,60 @@ const LCAForm = ({ onComplete, onCancel, onViewDetailedResults }) => {
     }
     
     return null;
+  };
+
+  // Enhanced function to predict missing fields for the current step
+  const predictMissingFields = async () => {
+    setIsPredicting(true);
+    setError(null);
+    setPredictionSuccess(false);
+    setPredictedFields([]);
+    
+    try {
+      const stepKey = `step${currentStep}`;
+      const currentStepFields = formConfig[stepKey]?.fields.map(f => f.name) || [];
+      
+      // Get suggestions from the backend using all data entered so far
+      const suggestions = await getSuggestions(formData);
+      
+      if (suggestions) {
+        // Filter suggestions to only include fields for the current step
+        const relevantSuggestions = {};
+        let hasRelevantSuggestions = false;
+        
+        // Check which suggested fields belong to the current step
+        Object.keys(suggestions).forEach(key => {
+          if (currentStepFields.includes(key) && !formData[key]) {
+            relevantSuggestions[key] = suggestions[key];
+            hasRelevantSuggestions = true;
+          }
+        });
+        
+        if (hasRelevantSuggestions) {
+          // Apply the relevant suggestions to the form data
+          setFormData(prev => ({
+            ...prev,
+            ...relevantSuggestions
+          }));
+          
+          // Save the names of predicted fields for highlighting
+          setPredictedFields(Object.keys(relevantSuggestions));
+          setPredictionSuccess(true);
+          
+          // Show success message briefly
+          setTimeout(() => {
+            setPredictionSuccess(false);
+          }, 3000);
+        } else {
+          setError("No relevant predictions available for this step. Try adding more information first.");
+        }
+      }
+    } catch (error) {
+      console.error('Error predicting fields:', error);
+      setError(error.message || 'Failed to predict field values');
+    } finally {
+      setIsPredicting(false);
+    }
   };
 
   return (
