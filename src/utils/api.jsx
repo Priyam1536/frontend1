@@ -183,6 +183,194 @@ export const userAPI = {
   },
 };
 
+// Team management API calls
+export const teamAPI = {
+  // Get all team members
+  getMembers: async () => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/team/members`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch team members');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Get team members error:', error);
+      throw error;
+    }
+  },
+  
+  // Get pending invitations
+  getInvitations: async () => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/team/invitations`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch invitations');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Get invitations error:', error);
+      throw error;
+    }
+  },
+  
+  // Invite new team member
+  inviteMember: async (email, role, message) => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/team/invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email, role, message }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send invitation');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Invite member error:', error);
+      throw error;
+    }
+  },
+  
+  // Resend invitation
+  resendInvitation: async (invitationId) => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/team/invitation/${invitationId}/resend`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to resend invitation');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Resend invitation error:', error);
+      throw error;
+    }
+  },
+  
+  // Cancel invitation
+  cancelInvitation: async (invitationId) => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/team/invitation/${invitationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to cancel invitation');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Cancel invitation error:', error);
+      throw error;
+    }
+  },
+  
+  // Update team member
+  updateMember: async (memberId, updates) => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/team/member/${memberId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update team member');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Update member error:', error);
+      throw error;
+    }
+  },
+  
+  // Remove team member
+  removeMember: async (memberId) => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/team/member/${memberId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to remove team member');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Remove member error:', error);
+      throw error;
+    }
+  },
+};
+
 // Report utilities for PDF generation and analysis
 export const reportUtils = {
   // Generate insights based on form data
@@ -388,4 +576,91 @@ export const reportUtils = {
   }
 };
 
-export default { authAPI, tokenStorage, userAPI, reportUtils };
+// LCA API calls for impact assessment and insights
+export const lcaAPI = {
+  // Get calculated insights from reports
+  getInsights: async (timeRange = 'all', metricType = 'all') => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/lca/insights?timeRange=${timeRange}&metric=${metricType}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch insights');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Get insights error:', error);
+      throw error;
+    }
+  },
+  
+  // Get reports with filtering options
+  getReports: async (filters = {}) => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      // Build query string from filters
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/lca/reports?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch reports');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Get reports error:', error);
+      throw error;
+    }
+  },
+  
+  // Calculate aggregated statistics
+  calculateStatistics: async (reportIds = []) => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/lca/statistics`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reportIds }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to calculate statistics');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Calculate statistics error:', error);
+      throw error;
+    }
+  }
+};
+
+export default { authAPI, tokenStorage, userAPI, teamAPI, reportUtils, lcaAPI };
