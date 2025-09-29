@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, FileText, Download, Upload, Database, LogOut, Undo, Redo, Copy, Cast as Paste, Settings, Eye, Navigation, Play, Calculator, BarChart3, Shuffle, TrendingUp, AppWindow as Window, HelpCircle, BookOpen, Info, RefreshCw } from 'lucide-react';
+import { ChevronDown, FileText, Download, Upload, Database, LogOut, Undo, Redo, Copy, Clipboard as Paste, Settings, Eye, Navigation, Play, Calculator, BarChart3, Shuffle, TrendingUp, AppWindow as Window, HelpCircle, BookOpen, Info, RefreshCw, User } from 'lucide-react';
+import Logo from './Logo.jsx';
 
-const MenuBar = ({ onMenuAction }) => {
+const MenuBar = ({ onMenuAction, userName = "Priyam", onProfileAction }) => {
   const [activeMenu, setActiveMenu] = useState(null);
+  const [lastAction, setLastAction] = useState(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const menuItems = [
     {
@@ -74,14 +77,33 @@ const MenuBar = ({ onMenuAction }) => {
   };
 
   const handleItemClick = (action) => {
-    onMenuAction(action);
+    if (typeof onMenuAction === 'function') {
+      onMenuAction(action);
+    } else {
+      console.error('MenuBar: onMenuAction is not a function:', onMenuAction);
+    }
+    
+    setLastAction(action);
     setActiveMenu(null);
+    
+    // Clear the action indicator after 2 seconds
+    setTimeout(() => setLastAction(null), 2000);
   };
 
   return (
     <div className="bg-white border-b border-gray-200 relative z-50">
-      <div className="flex items-center px-4 py-1">
-        {menuItems.map((menu) => (
+      <div className="flex items-center justify-between px-4 py-2">
+        {/* Logo and Menu Items */}
+        <div className="flex items-center space-x-4">
+          {/* Logo */}
+          <div className="flex items-center space-x-2">
+            <Logo size="small" />
+            <span className="text-lg font-semibold text-gray-800">OreSense AI</span>
+          </div>
+          
+          {/* Menu Items */}
+          <div className="flex items-center">
+          {menuItems.map((menu) => (
           <div key={menu.label} className="relative">
             <button
               onClick={() => handleMenuClick(menu.label)}
@@ -94,7 +116,7 @@ const MenuBar = ({ onMenuAction }) => {
             </button>
             
             {activeMenu === menu.label && (
-              <div className="absolute left-0 mt-1 w-56 bg-white border border-gray-200 shadow-lg rounded-md py-1 z-10">
+              <div className="absolute left-0 mt-1 w-56 bg-white border border-gray-200 shadow-lg rounded-md py-1 z-50">
                 {menu.items.map((item, index) => (
                   item.type === 'separator' ? (
                     <div key={`sep-${index}`} className="border-t border-gray-100 my-1" />
@@ -118,12 +140,66 @@ const MenuBar = ({ onMenuAction }) => {
             )}
           </div>
         ))}
+          </div>
+        </div>
+        
+        {/* User Profile Section */}
+        <div className="flex items-center space-x-4">
+          {/* Status Bar */}
+          {lastAction && (
+            <div className="px-3 py-1 text-xs text-gray-500 bg-gray-50 rounded">
+              Last action: {lastAction.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </div>
+          )}
+          
+          {/* User Profile Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <span className="text-sm text-gray-600">Hey! {userName}</span>
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                <User className="h-4 w-4 text-white" />
+              </div>
+            </button>
+            
+            {showProfileMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 shadow-lg rounded-md py-1 z-50">
+                <button
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    if (onProfileAction) onProfileAction('user-profile');
+                  }}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                >
+                  <User className="h-4 w-4 mr-3 text-gray-400" />
+                  <span>My Profile</span>
+                </button>
+                <div className="border-t border-gray-100 my-1" />
+                <button
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    if (onMenuAction) onMenuAction('exit');
+                  }}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+                >
+                  <LogOut className="h-4 w-4 mr-3 text-gray-400" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       
-      {activeMenu && (
+      {(activeMenu || showProfileMenu) && (
         <div 
           className="fixed inset-0 z-40" 
-          onClick={() => setActiveMenu(null)}
+          onClick={() => {
+            setActiveMenu(null);
+            setShowProfileMenu(false);
+          }}
         />
       )}
     </div>
