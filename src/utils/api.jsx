@@ -97,6 +97,92 @@ export const tokenStorage = {
   }
 };
 
+// User profile related API calls
+export const userAPI = {
+  // Get user profile
+  getProfile: async () => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile data');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Get profile data error:', error);
+      throw error;
+    }
+  },
+  
+  // Update user profile
+  updateProfile: async (profileData) => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update profile');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
+  },
+  
+  // Update password
+  updatePassword: async (currentPassword, newPassword) => {
+    try {
+      const token = tokenStorage.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/users/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update password');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Update password error:', error);
+      throw error;
+    }
+  },
+};
+
 // Report utilities for PDF generation and analysis
 export const reportUtils = {
   // Generate insights based on form data
@@ -302,4 +388,4 @@ export const reportUtils = {
   }
 };
 
-export default { authAPI, tokenStorage, reportUtils };
+export default { authAPI, tokenStorage, userAPI, reportUtils };

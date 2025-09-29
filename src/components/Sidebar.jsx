@@ -4,8 +4,7 @@ import {
   BarChart3, 
   Users, 
   Settings2, 
-  User, 
-  Settings,
+  User,
   ChevronRight,
   ChevronDown,
   GitBranch 
@@ -40,23 +39,17 @@ const Sidebar = ({ onItemSelect, activeItem = 'dashboard' }) => {
       icon: Users,
       description: 'User and collaborator management'
     },
-    { 
-      id: 'parameters', 
-      label: 'Parameters', 
-      icon: Settings2,
-      description: 'Model parameters and configuration'
-    },
+    // { 
+    //   id: 'parameters', 
+    //   label: 'Parameters', 
+    //   icon: Settings2,
+    //   description: 'Model parameters and configuration'
+    // },
     { 
       id: 'user-profile', 
       label: 'User Profile & Preferences', 
       icon: User,
       description: 'Personal settings and preferences'
-    },
-    { 
-      id: 'settings', 
-      label: 'Settings', 
-      icon: Settings,
-      description: 'App-wide configuration'
     }
   ];
 
@@ -144,3 +137,4 @@ const Sidebar = ({ onItemSelect, activeItem = 'dashboard' }) => {
 };
 
 export default Sidebar;
+    
