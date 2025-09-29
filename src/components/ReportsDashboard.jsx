@@ -143,7 +143,6 @@ const ReportsDashboard = ({ reports: initialReports = [], onNewReport, onCompare
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">LCA Reports</h1>
           <p className="text-gray-600">
             {reports.length} report{reports.length !== 1 ? 's' : ''} available
           </p>

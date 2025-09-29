@@ -1,79 +1,143 @@
-import React from 'react';
+﻿import React, { useState } from 'react';
 import { 
+  Home, 
   BarChart3, 
-  Database, 
-  FileText, 
-  Settings, 
-  Zap, 
-  FolderOpen,
-  GitBranch,
-  TrendingUp,
-  Brain
+  Users, 
+  Settings2, 
+  User, 
+  Settings,
+  ChevronRight,
+  ChevronDown,
+  GitBranch 
 } from 'lucide-react';
+import Logo from './Logo.jsx';
 
-const Sidebar = ({ activeView, setActiveView }) => {
+const Sidebar = ({ onItemSelect, activeItem = 'dashboard' }) => {
+  const [expandedSections, setExpandedSections] = useState({});
+
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'projects', label: 'Projects', icon: FolderOpen },
-    { id: 'processes', label: 'Processes', icon: GitBranch },
-    { id: 'impact', label: 'Impact Assessment', icon: TrendingUp },
-    { id: 'database', label: 'Database', icon: Database },
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: Home,
+      description: 'Main overview and reports'
+    },
+    { 
+      id: 'flows', 
+      label: 'Flows', 
+      icon: GitBranch,
+      description: 'Flow templates and parameter presets'
+    },
+    { 
+      id: 'impact-results', 
+      label: 'Impact Results', 
+      icon: BarChart3,
+      description: 'Environmental impact analysis'
+    },
+    { 
+      id: 'team-management', 
+      label: 'Team Management', 
+      icon: Users,
+      description: 'User and collaborator management'
+    },
+    { 
+      id: 'parameters', 
+      label: 'Parameters', 
+      icon: Settings2,
+      description: 'Model parameters and configuration'
+    },
+    { 
+      id: 'user-profile', 
+      label: 'User Profile & Preferences', 
+      icon: User,
+      description: 'Personal settings and preferences'
+    },
+    { 
+      id: 'settings', 
+      label: 'Settings', 
+      icon: Settings,
+      description: 'App-wide configuration'
+    }
   ];
 
-  return (
-    <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
-      <div className="p-6 border-b border-gray-100">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
-            <Brain className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h2 className="font-bold text-gray-900">OreSense AI</h2>
-            <p className="text-sm text-gray-500">LCA Platform</p>
-          </div>
-        </div>
-      </div>
+  const handleItemClick = (itemId) => {
+    if (onItemSelect) {
+      onItemSelect(itemId);
+    }
+  };
 
-      <nav className="flex-1 p-4">
-        <div className="space-y-1">
+  const toggleSection = (sectionId) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
+
+  return (
+    <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col shadow-sm">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="flex items-center space-x-3 mb-2">
+          <Logo size="small" />
+          <h2 className="text-lg font-semibold text-gray-800">OreSense AI</h2>
+        </div>
+        <p className="text-xs text-gray-600">Navigation Panel</p>
+      </div>
+      
+      {/* Navigation Menu */}
+      <div className="flex-1 py-3 overflow-y-auto">
+        <nav className="space-y-1 px-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = activeItem === item.id;
+            
             return (
-              <button
-                key={item.id}
-                onClick={() => setActiveView(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
-                  activeView === item.id
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="font-medium">{item.label}</span>
-              </button>
+              <div key={item.id} className="group">
+                <button
+                  onClick={() => handleItemClick(item.id)}
+                  className={`
+                    w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg
+                    transition-all duration-200 ease-in-out
+                    ${isActive 
+                      ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-500 shadow-sm' 
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                  `}
+                  title={item.description}
+                >
+                  <Icon 
+                    className={`
+                      flex-shrink-0 mr-3 h-5 w-5 transition-colors duration-200
+                      ${isActive ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'}
+                    `}
+                  />
+                  <span className="flex-1 text-left truncate">
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                  )}
+                </button>
+                
+                {/* Tooltip on hover */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                  <div className="absolute left-72 top-0 z-10 bg-gray-900 text-white text-xs rounded py-1 px-2 shadow-lg whitespace-nowrap">
+                    {item.description}
+                  </div>
+                </div>
+              </div>
             );
           })}
+        </nav>
+      </div>
+      
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="text-xs text-gray-500 text-center">
+          <p>Version 2.0</p>
+          <p className="mt-1">© 2025 OreSense AI</p>
         </div>
-
-        <div className="mt-8 pt-6 border-t border-gray-100">
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <Zap className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-semibold text-gray-800">AI Assistant</span>
-            </div>
-            <p className="text-xs text-gray-600 mb-3">Get intelligent insights for your LCA projects</p>
-            <button className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white text-sm font-medium py-2 px-3 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all duration-200">
-              Ask AI
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <div className="p-4 border-t border-gray-100">
-        <button className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors">
-          <Settings className="h-5 w-5" />
-          <span className="font-medium">Settings</span>
-        </button>
       </div>
     </div>
   );

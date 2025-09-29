@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Brain, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { authAPI, tokenStorage } from '../utils/api';
+import Logo from './Logo.jsx';
 
 const LoginPage = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -86,9 +87,7 @@ const LoginPage = ({ onLogin }) => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-green-600 rounded-xl flex items-center justify-center">
-              <Brain className="h-8 w-8 text-white" />
-            </div>
+            <Logo size="medium" className="drop-shadow-lg" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
             {isLogin ? 'Sign in to OreSense AI' : 'Create your account'}
