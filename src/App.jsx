@@ -15,7 +15,7 @@ import TeamManagement from './components/TeamManagement.jsx';
 import UserProfile from './components/UserProfile.jsx';
 import FlowTemplates from './components/FlowTemplates.jsx';
 import { NotificationProvider, useNotification } from './components/NotificationSystem.jsx';
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 import { tokenStorage, authAPI } from './utils/api.jsx';
 
