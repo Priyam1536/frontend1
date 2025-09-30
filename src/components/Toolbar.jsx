@@ -24,15 +24,6 @@ const Toolbar = ({ onToolbarAction }) => {
     { type: 'separator' },
     { icon: Save, label: 'Save', action: 'save' },
     { icon: RefreshCw, label: 'Refresh', action: 'refresh' },
-    { icon: Trash2, label: 'Delete', action: 'delete' },
-    { type: 'separator' },
-    { icon: Calculator, label: 'Run LCA', action: 'run-lca' },
-    { icon: BarChart3, label: 'Generate Report', action: 'generate-report' },
-    { type: 'separator' },
-    { icon: GitBranch, label: 'Product System Editor', action: 'system-editor' },
-    { icon: Layers, label: 'Process Editor', action: 'process-editor' },
-    { type: 'separator' },
-    { icon: Settings, label: 'Settings', action: 'settings' }
   ];
 
   return (
