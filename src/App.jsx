@@ -35,8 +35,6 @@ const AppContent = () => {
   const [currentReport, setCurrentReport] = useState(null);
   const [currentInsights, setCurrentInsights] = useState(null);
   const [activeSidebarItem, setActiveSidebarItem] = useState('dashboard');
-  const [actionHistory, setActionHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
   const [flowTemplates, setFlowTemplates] = useState([]);
   const [currentParameters, setCurrentParameters] = useState({});
 
@@ -45,30 +43,6 @@ const AppContent = () => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
-          case 'z':
-            e.preventDefault();
-            if (e.shiftKey) {
-              handleMenuAction('redo');
-            } else {
-              handleMenuAction('undo');
-            }
-            break;
-          case 'y':
-            e.preventDefault();
-            handleMenuAction('redo');
-            break;
-          case 'c':
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-              e.preventDefault();
-              handleMenuAction('copy');
-            }
-            break;
-          case 'v':
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-              e.preventDefault();
-              handleMenuAction('paste');
-            }
-            break;
           case 'n':
             e.preventDefault();
             handleMenuAction('new-project');
@@ -79,7 +53,7 @@ const AppContent = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIndex, actionHistory, currentReport]);
+  }, [currentReport]);
 
   // Verify token is valid on initial load
   useEffect(() => {
@@ -157,42 +131,6 @@ const AppContent = () => {
         break;
       
       // Edit Menu Actions
-      case 'undo':
-        if (historyIndex >= 0) {
-          const action = actionHistory[historyIndex];
-          // Restore previous state
-          if (action.type === 'DELETE_REPORT') {
-            setReports(action.before.reports);
-          }
-          setHistoryIndex(historyIndex - 1);
-          showSuccess(`Undid: ${action.type}`);
-        } else {
-          showWarning('Nothing to undo');
-        }
-        break;
-      case 'redo':
-        if (historyIndex < actionHistory.length - 1) {
-          const nextIndex = historyIndex + 1;
-          const action = actionHistory[nextIndex];
-          // Restore next state
-          if (action.type === 'DELETE_REPORT') {
-            setReports(action.after.reports);
-          }
-          setHistoryIndex(nextIndex);
-          showSuccess(`Redid: ${action.type}`);
-        } else {
-          showWarning('Nothing to redo');
-        }
-        break;
-      case 'copy':
-        // Copy current selection or data
-        if (currentReport) {
-          navigator.clipboard.writeText(JSON.stringify(currentReport, null, 2));
-          showSuccess('Current report data copied to clipboard');
-        } else {
-          showWarning('No data to copy. Please select a report first.');
-        }
-        break;
       case 'paste':
         // Paste from clipboard
         navigator.clipboard.readText().then(text => {
@@ -279,36 +217,6 @@ const AppContent = () => {
         console.log('Unhandled menu action:', action);
         showWarning(`Menu action "${action}" is not yet implemented`);
     }
-  };
-
-  // Utility function to record actions for undo/redo
-  const recordAction = (actionType, beforeState, afterState) => {
-    const action = {
-      type: actionType,
-      before: beforeState,
-      after: afterState,
-      timestamp: new Date().toISOString()
-    };
-    
-    const newHistory = actionHistory.slice(0, historyIndex + 1);
-    newHistory.push(action);
-    setActionHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  };
-
-  // Enhanced functions with action recording
-  const handleNewReportWithHistory = () => {
-    const beforeState = { reports: [...reports] };
-    setShowLCAForm(true);
-    // Record action when form is completed
-  };
-
-  const handleDeleteReportWithHistory = (reportId) => {
-    const beforeState = { reports: [...reports] };
-    const newReports = reports.filter(r => r.id !== reportId);
-    setReports(newReports);
-    const afterState = { reports: newReports };
-    recordAction('DELETE_REPORT', beforeState, afterState);
   };
 
   const handleToolbarAction = (action) => {
