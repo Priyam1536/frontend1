@@ -19,49 +19,7 @@ const MenuBar = ({ onMenuAction, userName = "Priyam", onProfileAction }) => {
         { label: 'Exit', icon: LogOut, action: 'exit' }
       ]
     },
-    {
-      label: 'Edit',
-      items: [
-        { label: 'Undo', icon: Undo, action: 'undo', shortcut: 'Ctrl+Z' },
-        { label: 'Redo', icon: Redo, action: 'redo', shortcut: 'Ctrl+Y' },
-        { type: 'separator' },
-        { label: 'Copy', icon: Copy, action: 'copy', shortcut: 'Ctrl+C' },
-        { label: 'Paste', icon: Paste, action: 'paste', shortcut: 'Ctrl+V' },
-        { type: 'separator' },
-        { label: 'Preferences', icon: Settings, action: 'preferences' }
-      ]
-    },
-    {
-      label: 'View',
-      items: [
-        { label: 'Show Navigation', icon: Eye, action: 'show-navigation' },
-        { label: 'Show Results', icon: Eye, action: 'show-results' },
-        { type: 'separator' },
-        { label: 'Reset Layout', icon: RefreshCw, action: 'reset-layout' }
-      ]
-    },
-    {
-      label: 'Navigate',
-      items: [
-        { label: 'Go to Process', icon: Navigation, action: 'goto-process' },
-        { label: 'Go to Flow', icon: Navigation, action: 'goto-flow' },
-        { label: 'Go to Product System', icon: Navigation, action: 'goto-system' }
-      ]
-    },
-    {
-      label: 'Run',
-      items: [
-        { label: 'LCA Calculation', icon: Calculator, action: 'run-lca' },
-        { label: 'Generate Report', icon: BarChart3, action: 'generate-report' }
-      ]
-    },
-    {
-      label: 'Window',
-      items: [
-        { label: 'Modeling Perspective', icon: Window, action: 'perspective-modeling' },
-        { label: 'Analysis Perspective', icon: Window, action: 'perspective-analysis' }
-      ]
-    },
+   
     {
       label: 'Help',
       items: [
