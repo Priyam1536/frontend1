@@ -1,23 +1,31 @@
-import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Calendar, Camera, Edit, Save, X, Bell, Shield, Globe, Palette } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Mail, Phone, MapPin, Calendar, Camera, Edit, Save, X, Bell, Shield, Globe, Palette, Loader, AlertCircle } from 'lucide-react';
+import { userAPI } from '../utils/api';
+import { useNotification } from './NotificationSystem.jsx';
 
 const UserProfile = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    firstName: 'Alice',
-    lastName: 'Johnson',
-    email: 'alice.johnson@oresense.ai',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    department: 'Environmental Analysis',
-    position: 'Senior LCA Analyst',
-    joinDate: '2023-01-15',
-    bio: 'Environmental scientist with 8+ years of experience in life cycle assessment and sustainability consulting.',
-    avatar: 'AJ'
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const { showSuccess, showError } = useNotification();
+  
+  // Default profile data structure
+  const defaultProfileData = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    location: '',
+    department: '',
+    position: '',
+    joinDate: '',
+    bio: '',
+    avatar: ''
+  };
 
-  const [preferences, setPreferences] = useState({
+  const defaultPreferences = {
     notifications: {
       emailAlerts: true,
       pushNotifications: false,
@@ -36,20 +44,79 @@ const UserProfile = () => {
       profileVisibility: 'team',
       activitySharing: true,
       dataSharing: false,
-      twoFactorAuth: true
+      twoFactorAuth: false
     }
-  });
+  };
 
-  const [tempData, setTempData] = useState({ ...profileData });
+  const [profileData, setProfileData] = useState(defaultProfileData);
+  const [preferences, setPreferences] = useState(defaultPreferences);
+  const [tempData, setTempData] = useState(defaultProfileData);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+
+  // Fetch profile data from backend
+  useEffect(() => {
+    async function fetchProfileData() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await userAPI.getProfile();
+        
+        if (response.success) {
+          setProfileData(response.profileData);
+          setPreferences(response.profileData.preferences || defaultPreferences);
+          setTempData(response.profileData);
+        } else {
+          setError('Failed to load profile data');
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+        setError('Failed to load profile data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchProfileData();
+  }, []);
 
   const handleEdit = () => {
     setIsEditing(true);
     setTempData({ ...profileData });
   };
 
-  const handleSave = () => {
-    setProfileData({ ...tempData });
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+      
+      // Include preferences in the update
+      const updatedData = {
+        ...tempData,
+        preferences: preferences
+      };
+      
+      const response = await userAPI.updateProfile(updatedData);
+      
+      if (response.success) {
+        setProfileData(response.profileData);
+        setIsEditing(false);
+        showSuccess('Profile updated successfully');
+      } else {
+        setError('Failed to update profile');
+        showError('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError(error.message || 'Failed to update profile');
+      showError(error.message || 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -74,6 +141,64 @@ const UserProfile = () => {
     }));
   };
 
+  const handlePasswordChange = (field, value) => {
+    setPasswordData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // Clear error when user types
+    setPasswordError('');
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Client-side validation
+    if (!passwordData.currentPassword || !passwordData.newPassword) {
+      setPasswordError('All fields are required');
+      return;
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      setPasswordError('');
+      
+      const response = await userAPI.updatePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
+      
+      if (response.success) {
+        showSuccess('Password updated successfully');
+        // Reset form
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else {
+        setPasswordError(response.message || 'Failed to update password');
+        showError(response.message || 'Failed to update password');
+      }
+    } catch (error) {
+      console.error('Error updating password:', error);
+      setPasswordError(error.message || 'Failed to update password');
+      showError(error.message || 'Failed to update password');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const tabs = [
     { id: 'profile', label: 'Profile Information', icon: User },
     { id: 'preferences', label: 'Preferences', icon: Bell },
@@ -82,6 +207,7 @@ const UserProfile = () => {
   ];
 
   const ActivityHistory = () => {
+    // This could be fetched from the backend in the future
     const activities = [
       { date: '2024-01-20', action: 'Created LCA report for Aluminum Production', type: 'report' },
       { date: '2024-01-19', action: 'Updated team parameters for Mining Operations', type: 'parameter' },
@@ -114,6 +240,33 @@ const UserProfile = () => {
     );
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center min-h-screen">
+        <Loader className="w-10 h-10 text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-600">Loading profile data...</p>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !profileData.firstName) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center min-h-screen">
+        <AlertCircle className="w-10 h-10 text-red-500 mb-4" />
+        <p className="text-red-600 font-medium mb-2">Error loading profile</p>
+        <p className="text-gray-600">{error}</p>
+        <button 
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 bg-gray-50 min-h-full overflow-y-auto">
       {/* Header */}
@@ -122,14 +275,14 @@ const UserProfile = () => {
         <p className="text-gray-600 mt-1">Manage your personal information, preferences, and account settings</p>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col md:flex-row gap-6">
         {/* Profile Card */}
-        <div className="w-80 flex-shrink-0">
+        <div className="w-full md:w-80 flex-shrink-0">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <div className="text-center">
               <div className="relative inline-block mb-4">
                 <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  {profileData.avatar}
+                  {profileData.avatar || 'U'}
                 </div>
                 <button className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-200 hover:bg-gray-50">
                   <Camera className="w-4 h-4 text-gray-600" />
@@ -149,11 +302,11 @@ const UserProfile = () => {
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Phone className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-600">{profileData.phone}</span>
+                <span className="text-gray-600">{profileData.phone || 'Not set'}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-600">{profileData.location}</span>
+                <span className="text-gray-600">{profileData.location || 'Not set'}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Calendar className="w-4 h-4 text-gray-400" />
@@ -208,20 +361,40 @@ const UserProfile = () => {
                       <button
                         onClick={handleCancel}
                         className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        disabled={isSaving}
                       >
                         <X className="w-4 h-4" />
                         Cancel
                       </button>
                       <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        disabled={isSaving}
                       >
-                        <Save className="w-4 h-4" />
-                        Save Changes
+                        {isSaving ? (
+                          <>
+                            <Loader className="w-4 h-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4" />
+                            Save Changes
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
                 </div>
+
+                {error && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+                    <p className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      {error}
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -230,7 +403,7 @@ const UserProfile = () => {
                       type="text"
                       value={isEditing ? tempData.firstName : profileData.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={!isEditing || isSaving}
                       className={`w-full px-3 py-2 border rounded-lg ${
                         isEditing 
                           ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
@@ -244,7 +417,7 @@ const UserProfile = () => {
                       type="text"
                       value={isEditing ? tempData.lastName : profileData.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={!isEditing || isSaving}
                       className={`w-full px-3 py-2 border rounded-lg ${
                         isEditing 
                           ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
@@ -258,7 +431,7 @@ const UserProfile = () => {
                       type="email"
                       value={isEditing ? tempData.email : profileData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={!isEditing || isSaving}
                       className={`w-full px-3 py-2 border rounded-lg ${
                         isEditing 
                           ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
@@ -272,7 +445,7 @@ const UserProfile = () => {
                       type="tel"
                       value={isEditing ? tempData.phone : profileData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={!isEditing || isSaving}
                       className={`w-full px-3 py-2 border rounded-lg ${
                         isEditing 
                           ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
@@ -286,7 +459,7 @@ const UserProfile = () => {
                       type="text"
                       value={isEditing ? tempData.location : profileData.location}
                       onChange={(e) => handleInputChange('location', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={!isEditing || isSaving}
                       className={`w-full px-3 py-2 border rounded-lg ${
                         isEditing 
                           ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
@@ -300,7 +473,7 @@ const UserProfile = () => {
                       type="text"
                       value={isEditing ? tempData.position : profileData.position}
                       onChange={(e) => handleInputChange('position', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={!isEditing || isSaving}
                       className={`w-full px-3 py-2 border rounded-lg ${
                         isEditing 
                           ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
@@ -314,7 +487,7 @@ const UserProfile = () => {
                       rows="3"
                       value={isEditing ? tempData.bio : profileData.bio}
                       onChange={(e) => handleInputChange('bio', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={!isEditing || isSaving}
                       className={`w-full px-3 py-2 border rounded-lg ${
                         isEditing 
                           ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
@@ -350,8 +523,9 @@ const UserProfile = () => {
                               checked={value}
                               onChange={(e) => handlePreferenceChange('notifications', key, e.target.checked)}
                               className="sr-only peer"
+                              disabled={isSaving}
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 disabled:opacity-50"></div>
                           </label>
                         </div>
                       ))}
@@ -371,6 +545,7 @@ const UserProfile = () => {
                           value={preferences.display.theme}
                           onChange={(e) => handlePreferenceChange('display', 'theme', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          disabled={isSaving}
                         >
                           <option value="light">Light</option>
                           <option value="dark">Dark</option>
@@ -383,6 +558,7 @@ const UserProfile = () => {
                           value={preferences.display.language}
                           onChange={(e) => handlePreferenceChange('display', 'language', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          disabled={isSaving}
                         >
                           <option value="en">English</option>
                           <option value="es">Spanish</option>
@@ -391,6 +567,27 @@ const UserProfile = () => {
                         </select>
                       </div>
                     </div>
+                  </div>
+                  
+                  {/* Save button for preferences */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <button
+                      onClick={handleSave}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Save Preferences
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -404,7 +601,10 @@ const UserProfile = () => {
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <h4 className="font-medium text-gray-900 mb-2">Two-Factor Authentication</h4>
                     <p className="text-sm text-gray-600 mb-4">Add an extra layer of security to your account</p>
-                    <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <button 
+                      className={`px-4 py-2 ${preferences.privacy.twoFactorAuth ? 'bg-green-600' : 'bg-blue-600'} text-white rounded-lg hover:${preferences.privacy.twoFactorAuth ? 'bg-green-700' : 'bg-blue-700'} transition-colors`}
+                      onClick={() => handlePreferenceChange('privacy', 'twoFactorAuth', !preferences.privacy.twoFactorAuth)}
+                    >
                       {preferences.privacy.twoFactorAuth ? 'Enabled' : 'Enable 2FA'}
                     </button>
                   </div>
@@ -412,8 +612,121 @@ const UserProfile = () => {
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <h4 className="font-medium text-gray-900 mb-2">Change Password</h4>
                     <p className="text-sm text-gray-600 mb-4">Update your account password regularly</p>
-                    <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                      Change Password
+                    
+                    {passwordError && (
+                      <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+                        <p className="text-sm">{passwordError}</p>
+                      </div>
+                    )}
+                    
+                    <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                        <input
+                          type="password"
+                          value={passwordData.currentPassword}
+                          onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                        <input
+                          type="password"
+                          value={passwordData.newPassword}
+                          onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                        <input
+                          type="password"
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          disabled={isSaving}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        disabled={isSaving}
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader className="w-4 h-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          'Change Password'
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                  
+                  <div className="p-4 border border-gray-200 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">Privacy Settings</h4>
+                    <div className="space-y-3 mt-4">
+                      <div className="flex items-center justify-between py-2">
+                        <span className="text-sm text-gray-700">Profile Visibility</span>
+                        <select
+                          value={preferences.privacy.profileVisibility}
+                          onChange={(e) => handlePreferenceChange('privacy', 'profileVisibility', e.target.value)}
+                          className="px-3 py-2 border border-gray-300 rounded-lg"
+                          disabled={isSaving}
+                        >
+                          <option value="public">Public</option>
+                          <option value="team">Team Only</option>
+                          <option value="private">Private</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center justify-between py-2">
+                        <span className="text-sm text-gray-700">Activity Sharing</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={preferences.privacy.activitySharing}
+                            onChange={(e) => handlePreferenceChange('privacy', 'activitySharing', e.target.checked)}
+                            className="sr-only peer"
+                            disabled={isSaving}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between py-2">
+                        <span className="text-sm text-gray-700">Data Sharing for Analytics</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={preferences.privacy.dataSharing}
+                            onChange={(e) => handlePreferenceChange('privacy', 'dataSharing', e.target.checked)}
+                            className="sr-only peer"
+                            disabled={isSaving}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={handleSave}
+                      className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Save Privacy Settings
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

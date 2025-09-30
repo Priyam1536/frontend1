@@ -11,9 +11,8 @@ import LCAResultsPage from './components/LCAResultsPage.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import ImpactResults from './components/ImpactResults.jsx';
 import TeamManagement from './components/TeamManagement.jsx';
-import Parameters from './components/Parameters.jsx';
+// import Parameters from './components/Parameters.jsx';
 import UserProfile from './components/UserProfile.jsx';
-import AppSettings from './components/Settings.jsx';
 import FlowTemplates from './components/FlowTemplates.jsx';
 import { NotificationProvider, useNotification } from './components/NotificationSystem.jsx';
 
