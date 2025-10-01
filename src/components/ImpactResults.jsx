@@ -34,7 +34,7 @@ const ImpactResults = () => {
             const token = localStorage.getItem('authToken');
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             
-            const response = await fetch('http://localhost:8000/api/lca/reports', { headers });
+            const response = await fetch('https://perfect-earliest-gsm-programmers.trycloudflare.com/api/lca/reports', { headers });
             if (!response.ok) {
               throw new Error('Failed to fetch reports from API');
             }

@@ -14,7 +14,7 @@ const ReportsDashboard = ({ reports: initialReports = [], onNewReport, onCompare
     const fetchReportsFromDB = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('http://localhost:8000/api/lca/reports', {
+        const response = await fetch('https://perfect-earliest-gsm-programmers.trycloudflare.com/api/lca/reports', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ const ReportsDashboard = ({ reports: initialReports = [], onNewReport, onCompare
   // Handle deleting a report
   const handleDeleteReport = async (reportId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/lca/reports/${reportId}`, {
+      const response = await fetch(`https://perfect-earliest-gsm-programmers.trycloudflare.com/api/lca/reports/${reportId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
