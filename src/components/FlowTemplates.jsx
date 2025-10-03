@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 // Helper function for API calls
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'https://perfect-earliest-gsm-programmers.trycloudflare.com/api';
 
 const FlowTemplates = ({ 
   flowTemplates = [], 

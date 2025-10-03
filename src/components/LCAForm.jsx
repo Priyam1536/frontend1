@@ -181,7 +181,7 @@ const LCAForm = ({ onComplete, onCancel, onViewDetailedResults }) => {
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
 
   // Backend API URL - should come from environment variables in production
-  const API_URL = 'http://localhost:8000/api/lca';
+  const API_URL = 'https://perfect-earliest-gsm-programmers.trycloudflare.com/api/lca';
 
   // Generic input change handler
   const handleInputChange = (e) => {
