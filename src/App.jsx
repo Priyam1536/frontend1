@@ -23,7 +23,6 @@ import PathwayComparisonModal from './components/PathwayComparisonModal.jsx';
 
 
 const AppContent = () => {
-  // Initialize login state from token storage
   const [isLoggedIn, setIsLoggedIn] = useState(!!tokenStorage.getToken());
   const { showSuccess, showError, showInfo, showWarning } = useNotification();
   const [userData, setUserData] = useState(tokenStorage.getUserData());
@@ -39,7 +38,6 @@ const AppContent = () => {
   const [flowTemplates, setFlowTemplates] = useState([]);
   const [currentParameters, setCurrentParameters] = useState({});
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey) {
